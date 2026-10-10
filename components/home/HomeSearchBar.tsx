@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, MapPin, Sun, Loader2, X, Compass, ChevronRight, Sparkles } from "lucide-react";
+import { Search, MapPin, Sun, Loader2, X, Compass, ChevronRight } from "lucide-react";
 import { useLocationSearch } from "@/hooks/useLocationSearch";
 import { LocationData } from "@/types/location";
 import { WeatherData } from "@/types/weather";
@@ -11,18 +11,9 @@ interface HomeSearchBarProps {
   currentLocation: LocationData;
   weatherData: WeatherData | null;
   onSelectLocation: (loc: LocationData) => void;
-  onGetForecast: () => void;
+  onGetForecast: (loc?: LocationData) => void;
   className?: string;
 }
-
-const POPULAR_CITIES: LocationData[] = [
-  { name: "Tokyo", country: "Japan", latitude: 35.68, longitude: 139.76 },
-  { name: "Paris", country: "France", latitude: 48.85, longitude: 2.35 },
-  { name: "New York", country: "United States", latitude: 40.71, longitude: -74.0 },
-  { name: "Reykjavik", country: "Iceland", latitude: 64.14, longitude: -21.94 },
-  { name: "Dubai", country: "United Arab Emirates", latitude: 25.2, longitude: 55.27 },
-  { name: "Zhengzhou", country: "China", latitude: 34.75, longitude: 113.66 },
-];
 
 export function HomeSearchBar({
   currentLocation,
@@ -53,6 +44,23 @@ export function HomeSearchBar({
     setIsEditingLocation(false);
   };
 
+  const handleForecastClick = () => {
+    if (isOpen && results.length > 0) {
+      const topLoc = results[0];
+      handleSelect(topLoc);
+      onGetForecast(topLoc);
+    } else {
+      onGetForecast(currentLocation);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleForecastClick();
+    }
+  };
+
   const temp = weatherData ? `${weatherData.current.temperature}°` : "24°";
 
   return (
@@ -81,6 +89,7 @@ export function HomeSearchBar({
               setIsEditingLocation(true);
               if (results.length > 0) setIsOpen(true);
             }}
+            onKeyDown={handleKeyDown}
             placeholder="Search city or location"
             aria-label="Search city or location"
             className="w-full bg-transparent text-slate-800 placeholder-slate-400 text-sm md:text-base outline-none pr-2 font-normal"
@@ -135,7 +144,7 @@ export function HomeSearchBar({
         {/* Right CTA Button: Blue Pill "Get forecast >" */}
         <button
           type="button"
-          onClick={onGetForecast}
+          onClick={handleForecastClick}
           className="flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-[#52B1E4] hover:bg-[#43A0D3] active:scale-95 text-white font-medium text-sm transition-all duration-200 shadow-[0_4px_16px_rgba(82,177,228,0.4)] shrink-0 cursor-pointer group"
         >
           <span>Get forecast</span>
@@ -182,30 +191,6 @@ export function HomeSearchBar({
           ))}
         </ul>
       )}
-
-      {/* Quick City Suggestion Chips (Enhancement) */}
-      <div className="mt-3 flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap">
-        <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider flex items-center gap-1 mr-1">
-          <Sparkles className="w-3 h-3 text-cyan-400" /> Popular:
-        </span>
-        {POPULAR_CITIES.map((city) => {
-          const isSelected = city.name.toLowerCase() === currentLocation.name.toLowerCase();
-          return (
-            <button
-              key={city.name}
-              type="button"
-              onClick={() => handleSelect(city)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 border cursor-pointer ${
-                isSelected
-                  ? "bg-cyan-500/20 text-cyan-300 border-cyan-400/50 shadow-[0_0_12px_rgba(34,211,238,0.3)]"
-                  : "bg-white/10 hover:bg-white/20 text-slate-300 border-white/10 hover:border-white/30"
-              }`}
-            >
-              {city.name}
-            </button>
-          );
-        })}
-      </div>
     </motion.div>
   );
 }

@@ -33,6 +33,11 @@ export function WeatherDashboard({
   const [location, setLocation] = useState<LocationData>(initialLocation);
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0);
 
+  useEffect(() => {
+    setLocation(initialLocation);
+    setSelectedDayIndex(0);
+  }, [initialLocation.name, initialLocation.latitude, initialLocation.longitude, initialLocation.country]);
+
   const { weather, loading, error, refetch } = useWeather(
     location.latitude,
     location.longitude,

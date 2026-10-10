@@ -48,6 +48,7 @@ export function Navbar({ activeTab = "Discover", theme, onTabChange }: NavbarPro
     setCurrent(id);
     if (onTabChange) {
       onTabChange(id);
+      return;
     }
     if (id === "Forecast") {
       router.push("/dashboard");

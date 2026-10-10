@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/navigation/Navbar";
 import { HomeSearchBar } from "@/components/home/HomeSearchBar";
-import { HomeFeatureSection } from "@/components/home/HomeFeatureSection";
 import { GlobePlaceholder } from "@/components/globe/GlobePlaceholder";
 import { UseMyLocationButton } from "@/components/location/UseMyLocationButton";
 import { LocationSearch } from "@/components/location/LocationSearch";
@@ -13,6 +12,7 @@ import { WeatherData } from "@/types/weather";
 import { fetchWeatherData } from "@/lib/api/weather";
 import { useRouter } from "next/navigation";
 import { Globe, ChevronRight, X, Compass, Radio, Activity, Clock } from "lucide-react";
+import Shuffle from "@/components/ui/Shuffle";
 
 export default function Home() {
   const router = useRouter();
@@ -62,11 +62,12 @@ export default function Home() {
     setCurrentLocation(loc);
   };
 
-  const handleGetForecast = () => {
+  const handleGetForecast = (targetLoc?: LocationData) => {
+    const loc = targetLoc || currentLocation;
     router.push(
-      `/dashboard?lat=${currentLocation.latitude}&lon=${currentLocation.longitude}&city=${encodeURIComponent(
-        currentLocation.name
-      )}&country=${encodeURIComponent(currentLocation.country || "")}`
+      `/dashboard?lat=${loc.latitude}&lon=${loc.longitude}&city=${encodeURIComponent(
+        loc.name
+      )}&country=${encodeURIComponent(loc.country || "")}`
     );
   };
 
@@ -78,6 +79,7 @@ export default function Home() {
         onTabChange={(tab) => {
           if (tab === "Discover") setIsExplorerOpen(false);
           if (tab === "Forecast") handleGetForecast();
+          if (tab === "Climate") setIsExplorerOpen(true);
         }}
       />
 
@@ -126,8 +128,36 @@ export default function Home() {
             className="space-y-1"
           >
             <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white font-serif leading-[1.05] max-w-3xl drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)]">
-              Feel the world <br />
-              <span className="text-shimmer italic font-serif">around you.</span>
+              <Shuffle
+                text="Feel the world"
+                tag="span"
+                className="block"
+                shuffleDirection="right"
+                duration={0.4}
+                animationMode="evenodd"
+                shuffleTimes={2}
+                ease="power3.out"
+                stagger={0.03}
+                threshold={0.1}
+                triggerOnce={true}
+                triggerOnHover={true}
+                textAlign="left"
+              />
+              <Shuffle
+                text="around you."
+                tag="span"
+                className="block text-shimmer italic font-serif"
+                shuffleDirection="right"
+                duration={0.4}
+                animationMode="evenodd"
+                shuffleTimes={2}
+                ease="power3.out"
+                stagger={0.03}
+                threshold={0.1}
+                triggerOnce={true}
+                triggerOnHover={true}
+                textAlign="left"
+              />
             </h1>
           </motion.div>
 
@@ -178,22 +208,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3. Floating Search & Quick Weather Bar with Popular City Chips */}
-      <div className="relative z-30 -mt-10 sm:-mt-12 md:-mt-14 mb-0">
+      {/* 3. Floating Search & Quick Weather Bar */}
+      <div className="relative z-30 -mt-10 sm:-mt-12 md:-mt-14 mb-20 sm:mb-28">
         <HomeSearchBar
           currentLocation={currentLocation}
           weatherData={weatherData}
           onSelectLocation={handleSelectLocation}
           onGetForecast={handleGetForecast}
-        />
-      </div>
-
-      {/* 4. Lower Feature Section (Enhanced with Framer Motion) */}
-      <div id="feature-section" className="relative z-20">
-        <HomeFeatureSection
-          location={currentLocation}
-          weather={weatherData}
-          onExploreMore={() => setIsExplorerOpen(true)}
         />
       </div>
 

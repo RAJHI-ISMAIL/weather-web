@@ -37,9 +37,94 @@ function DashboardContent() {
         theme.isDark ? "text-[#F8FAFC] stars-bg" : "text-[#0A1628]"
       }`}
     >
+      {/* Sunny Theme: Full-screen video background */}
+      {currentThemeId === "sunny" && (
+        <>
+          <video
+            key="sunny-bg"
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="fixed inset-0 w-full h-full object-cover -z-20 pointer-events-none"
+            src="/sunny-bg.mp4"
+          />
+          {/* Vignette: darken edges so center video is vivid, content readable */}
+          <div className="fixed inset-0 -z-10 pointer-events-none"
+            style={{
+              background: `radial-gradient(ellipse at 50% 40%, transparent 30%, rgba(255,255,255,0.18) 65%, rgba(255,255,255,0.55) 100%),
+                           linear-gradient(to bottom, rgba(14,165,233,0.08) 0%, transparent 40%, rgba(255,255,255,0.35) 100%)`
+            }}
+          />
+          {/* Animated golden sun-shimmer ring */}
+          <div
+            className="fixed pointer-events-none -z-10"
+            style={{
+              top: '8%',
+              right: '8%',
+              width: 260,
+              height: 260,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(251,191,36,0.55) 0%, rgba(251,191,36,0.18) 45%, transparent 70%)',
+              animation: 'sun-pulse 4s ease-in-out infinite',
+              filter: 'blur(2px)',
+            }}
+          />
+          <style>{`
+            @keyframes sun-pulse {
+              0%, 100% { transform: scale(1); opacity: 0.8; }
+              50% { transform: scale(1.12); opacity: 1; }
+            }
+          `}</style>
+        </>
+      )}
+
+      {/* Heatwave Theme: Full-screen video background */}
+      {currentThemeId === "heatwave" && (
+        <>
+          <video
+            key="heatwave-bg"
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="fixed inset-0 w-full h-full object-cover -z-20 pointer-events-none"
+            src="/heatwave-bg.mp4"
+          />
+          {/* Warm vignette: keeps center video vivid while keeping white/glass cards and text readable */}
+          <div
+            className="fixed inset-0 -z-10 pointer-events-none"
+            style={{
+              background: `radial-gradient(ellipse at 50% 40%, transparent 25%, rgba(255,247,237,0.2) 60%, rgba(255,237,213,0.5) 100%),
+                           linear-gradient(to bottom, rgba(234,88,12,0.06) 0%, transparent 35%, rgba(255,237,213,0.35) 100%)`
+            }}
+          />
+          {/* Heat haze thermal glow orb */}
+          <div
+            className="fixed pointer-events-none -z-10"
+            style={{
+              top: '6%',
+              right: '8%',
+              width: 280,
+              height: 280,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(249,115,22,0.45) 0%, rgba(234,88,12,0.18) 45%, transparent 70%)',
+              animation: 'heat-pulse 3.8s ease-in-out infinite',
+              filter: 'blur(3px)',
+            }}
+          />
+          <style>{`
+            @keyframes heat-pulse {
+              0%, 100% { transform: scale(1); opacity: 0.75; }
+              50% { transform: scale(1.15); opacity: 1; }
+            }
+          `}</style>
+        </>
+      )}
+
       <Navbar activeTab="Forecast" theme={theme} />
 
-      {/* Rainy Dark Theme Additions: Realistic Falling Rain Simulation */}
+      {/* Rainy Dark Theme: Realistic Falling Rain Simulation */}
       {currentThemeId === "rainy" && <RainEffect intensity="medium" />}
 
       {/* Atmospheric Background Glow */}
@@ -52,6 +137,7 @@ function DashboardContent() {
 
       <main className="relative z-20 flex-1 w-full flex flex-col">
         <WeatherDashboard
+          key={`${initialLocation.name}-${initialLocation.latitude}-${initialLocation.longitude}`}
           initialLocation={initialLocation}
           onThemeChange={handleThemeChange}
         />
