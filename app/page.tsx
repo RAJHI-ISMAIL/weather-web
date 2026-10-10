@@ -11,9 +11,11 @@ import { LocationSearch } from "@/components/location/LocationSearch";
 import { LocationData } from "@/types/location";
 import { WeatherData } from "@/types/weather";
 import { fetchWeatherData } from "@/lib/api/weather";
+import { useRouter } from "next/navigation";
 import { Globe, ChevronRight, X, Compass, Radio, Activity, Clock } from "lucide-react";
 
 export default function Home() {
+  const router = useRouter();
   const [currentLocation, setCurrentLocation] = useState<LocationData>({
     name: "Zhengzhou",
     country: "China",
@@ -61,10 +63,11 @@ export default function Home() {
   };
 
   const handleGetForecast = () => {
-    const el = document.getElementById("feature-section");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
-    }
+    router.push(
+      `/dashboard?lat=${currentLocation.latitude}&lon=${currentLocation.longitude}&city=${encodeURIComponent(
+        currentLocation.name
+      )}&country=${encodeURIComponent(currentLocation.country || "")}`
+    );
   };
 
   return (

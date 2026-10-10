@@ -8,7 +8,16 @@ export interface CurrentWeather {
   isDay: boolean;
   high: number;
   low: number;
+  uvIndex: number;
+  visibility: number; // in km
+  pressure: number; // in hPa
   time: string;
+}
+
+export interface HourlyPoint {
+  time: string;
+  hourLabel: string;
+  temperature: number;
 }
 
 export interface DailyForecastDay {
@@ -20,6 +29,12 @@ export interface DailyForecastDay {
   tempMin: number;
 }
 
+export interface WeatherAlert {
+  title: string;
+  severity: "advisory" | "warning" | "extreme";
+  description: string;
+}
+
 export interface WeatherData {
   city: string;
   country?: string;
@@ -27,5 +42,7 @@ export interface WeatherData {
   longitude: number;
   timezone: string;
   current: CurrentWeather;
+  hourly: HourlyPoint[];
   daily: DailyForecastDay[];
+  alerts?: WeatherAlert[];
 }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Globe } from "lucide-react";
 
 interface NavbarProps {
@@ -11,16 +12,24 @@ interface NavbarProps {
 
 export function Navbar({ activeTab = "Discover", onTabChange }: NavbarProps) {
   const [current, setCurrent] = useState(activeTab);
+  const router = useRouter();
 
   const navItems = [
-    { id: "Discover", label: "Discover", href: "#" },
-    { id: "Forecast", label: "Forecast", href: "#forecast" },
-    { id: "Climate", label: "Climate", href: "#climate" },
+    { id: "Discover", label: "Discover", path: "/" },
+    { id: "Forecast", label: "Forecast", path: "/dashboard" },
+    { id: "Climate", label: "Climate", path: "/#feature-section" },
   ];
 
-  const handleSelect = (id: string) => {
+  const handleSelect = (id: string, path: string) => {
     setCurrent(id);
-    onTabChange?.(id);
+    if (onTabChange) {
+      onTabChange(id);
+    }
+    if (id === "Forecast") {
+      router.push("/dashboard");
+    } else if (id === "Discover") {
+      router.push("/");
+    }
   };
 
   return (
@@ -50,8 +59,8 @@ export function Navbar({ activeTab = "Discover", onTabChange }: NavbarProps) {
             return (
               <button
                 key={item.id}
-                onClick={() => handleSelect(item.id)}
-                className={`relative px-3.5 py-1.5 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#22D3EE] ${
+                onClick={() => handleSelect(item.id, item.path)}
+                className={`relative px-3.5 py-1.5 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#22D3EE] cursor-pointer ${
                   isActive
                     ? "text-[#F8FAFC] bg-white/[0.08]"
                     : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
