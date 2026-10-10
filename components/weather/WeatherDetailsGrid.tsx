@@ -2,77 +2,89 @@
 
 import { Thermometer, Droplets, Wind, Sun, Eye, Gauge, Compass } from "lucide-react";
 import { CurrentWeather } from "@/types/weather";
+import { ThemeTokens } from "@/lib/theme";
 
 interface WeatherDetailsGridProps {
   current: CurrentWeather;
+  theme: ThemeTokens;
 }
 
-export function WeatherDetailsGrid({ current }: WeatherDetailsGridProps) {
+export function WeatherDetailsGrid({ current, theme }: WeatherDetailsGridProps) {
   const getUvDescription = (uv: number) => {
     if (uv <= 2) return `${uv} (low)`;
     if (uv <= 5) return `${uv} (moderate)`;
     if (uv <= 7) return `${uv} (high)`;
-    return `${uv} (very high)`;
+    return `${uv} extreme`;
   };
 
   const rows = [
     {
-      icon: <Thermometer className="w-4 h-4 text-amber-400" />,
+      icon: <Thermometer className="w-4 h-4 text-amber-500" />,
       label: "Feels Like",
       value: `${current.feelsLike}°C`,
     },
     {
-      icon: <Droplets className="w-4 h-4 text-cyan-400" />,
+      icon: <Droplets className="w-4 h-4 text-cyan-500" />,
       label: "Humidity",
       value: `${current.humidity}%`,
     },
     {
-      icon: <Wind className="w-4 h-4 text-teal-400" />,
+      icon: <Wind className="w-4 h-4 text-teal-500" />,
       label: "Wind Speed",
       value: `${current.windSpeed} km/h`,
     },
     {
-      icon: <Sun className="w-4 h-4 text-amber-400" />,
+      icon: <Sun className="w-4 h-4 text-amber-500" />,
       label: "UV Index",
       value: getUvDescription(current.uvIndex),
     },
     {
-      icon: <Eye className="w-4 h-4 text-indigo-400" />,
+      icon: <Eye className="w-4 h-4 text-indigo-500" />,
       label: "Visibility",
       value: `${current.visibility} km`,
     },
     {
-      icon: <Gauge className="w-4 h-4 text-emerald-400" />,
+      icon: <Gauge className="w-4 h-4 text-emerald-500" />,
       label: "Pressure",
       value: `${current.pressure} hPa`,
     },
   ];
 
   return (
-    <div className="w-full rounded-3xl p-6 sm:p-7 bg-[#0A1628]/70 border border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.4)] backdrop-blur-xl flex flex-col justify-between">
+    <div
+      className={`w-full rounded-3xl p-6 sm:p-7 ${theme.cardBg} ${theme.cardBorder} flex flex-col justify-between transition-colors duration-500`}
+    >
       {/* Header */}
-      <div className="flex items-center gap-2.5 text-white font-bold text-base sm:text-lg mb-4">
-        <div className="p-1.5 rounded-full bg-cyan-500/20 text-[#22D3EE]">
+      <div className={`flex items-center gap-2.5 font-bold text-base sm:text-lg mb-4 ${theme.cardTextPrimary}`}>
+        <div
+          className="p-1.5 rounded-full"
+          style={{
+            backgroundColor: `${theme.accentColor}20`,
+            color: theme.accentColor,
+          }}
+        >
           <Compass className="w-4 h-4" />
         </div>
         <span>Weather Details</span>
       </div>
 
       {/* Metric Rows */}
-      <div className="divide-y divide-white/5 space-y-1">
+      <div className={`divide-y ${theme.isDark ? "divide-white/5" : "divide-slate-100"} space-y-1`}>
         {rows.map((row) => (
           <div
             key={row.label}
-            className="flex items-center justify-between py-3 hover:bg-white/[0.02] px-2 rounded-xl transition-colors"
+            className={`flex items-center justify-between py-3 px-2 rounded-xl transition-colors ${
+              theme.isDark ? "hover:bg-white/[0.02]" : "hover:bg-slate-50"
+            }`}
           >
-            <div className="flex items-center gap-3 text-slate-300 text-xs sm:text-sm font-medium">
-              <span className="p-1.5 rounded-lg bg-white/5 border border-white/5">
+            <div className={`flex items-center gap-3 text-xs sm:text-sm font-medium ${theme.cardTextSecondary}`}>
+              <span className={`p-1.5 rounded-lg border ${theme.isDark ? "bg-white/5 border-white/5" : "bg-slate-100/70 border-slate-200/60"}`}>
                 {row.icon}
               </span>
               <span>{row.label}</span>
             </div>
 
-            <div className="text-white font-bold text-sm sm:text-base font-sans tracking-tight">
+            <div className={`font-bold text-sm sm:text-base font-sans tracking-tight ${theme.cardTextPrimary}`}>
               {row.value}
             </div>
           </div>

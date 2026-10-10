@@ -1,11 +1,12 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Navbar } from "@/components/navigation/Navbar";
 import { WeatherDashboard } from "@/components/weather/WeatherDashboard";
 import { WeatherLoading } from "@/components/weather/WeatherLoading";
 import { LocationData } from "@/types/location";
+import { THEMES, ThemeId } from "@/lib/theme";
 
 function DashboardContent() {
   const searchParams = useSearchParams();
@@ -14,6 +15,8 @@ function DashboardContent() {
   const city = searchParams.get("city") || "Beverly Hills";
   const country = searchParams.get("country") || "USA";
 
+  const [currentThemeId, setCurrentThemeId] = useState<ThemeId>("rainy");
+
   const initialLocation: LocationData = {
     name: city,
     country: country,
@@ -21,19 +24,37 @@ function DashboardContent() {
     longitude: lon ? parseFloat(lon) : -118.4,
   };
 
+  const theme = THEMES[currentThemeId];
+
   return (
-    <div className="relative min-h-screen bg-[#050B14] text-[#F8FAFC] stars-bg flex flex-col pt-24 pb-16">
+    <div
+      className={`relative min-h-screen transition-colors duration-700 flex flex-col pt-24 pb-16 ${theme.pageBackground} ${
+        theme.isDark ? "text-[#F8FAFC] stars-bg" : "text-[#0A1628]"
+      }`}
+    >
       <Navbar activeTab="Forecast" />
 
       {/* Atmospheric Background Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-cyan-500/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+      <div
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full blur-[140px] pointer-events-none -z-10 transition-colors duration-700"
+        style={{
+          backgroundColor: `${theme.accentColor}15`,
+        }}
+      />
 
       <main className="flex-1 w-full flex flex-col">
-        <WeatherDashboard initialLocation={initialLocation} />
+        <WeatherDashboard
+          initialLocation={initialLocation}
+          onThemeChange={(newTheme) => setCurrentThemeId(newTheme)}
+        />
       </main>
 
-      <footer className="w-full py-8 px-4 text-center text-xs text-slate-500 border-t border-white/5">
-        TEMPORA Weather Dashboard · Real-time Open-Meteo Observations & Forecasts
+      <footer
+        className={`w-full py-8 px-4 text-center text-xs border-t transition-colors duration-500 ${
+          theme.isDark ? "text-slate-500 border-white/5" : "text-slate-400 border-slate-200/60"
+        }`}
+      >
+        TEMPORA Weather Dashboard · Real-time Dynamic Atmospheric Themes
       </footer>
     </div>
   );
