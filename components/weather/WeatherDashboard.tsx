@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { WeatherHero } from "@/components/weather/WeatherHero";
 import { ForecastCarousel } from "@/components/weather/ForecastCarousel";
 import { TemperatureChart } from "@/components/weather/TemperatureChart";
@@ -32,7 +32,6 @@ export function WeatherDashboard({
 }: WeatherDashboardProps) {
   const [location, setLocation] = useState<LocationData>(initialLocation);
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0);
-  const [themeMode, setThemeMode] = useState<ThemeId | "auto">("auto");
 
   const { weather, loading, error, refetch } = useWeather(
     location.latitude,
@@ -41,9 +40,8 @@ export function WeatherDashboard({
     location.country
   );
 
-  // Compute active theme
+  // Automatically determine theme strictly based on live meteorological data
   const activeThemeId: ThemeId = useMemo(() => {
-    if (themeMode !== "auto") return themeMode;
     if (!weather) return "rainy";
     return getAutoTheme(
       weather.current.weatherCode,
@@ -51,7 +49,14 @@ export function WeatherDashboard({
       weather.current.isDay,
       weather.alerts
     );
-  }, [themeMode, weather]);
+  }, [weather]);
+
+  // Synchronize parent page background with active weather theme
+  useEffect(() => {
+    if (onThemeChange) {
+      onThemeChange(activeThemeId);
+    }
+  }, [activeThemeId, onThemeChange]);
 
   const theme = THEMES[activeThemeId];
 
@@ -60,83 +65,48 @@ export function WeatherDashboard({
     setSelectedDayIndex(0);
   };
 
-  const handleSetTheme = (mode: ThemeId | "auto") => {
-    setThemeMode(mode);
-    if (mode !== "auto") {
-      onThemeChange?.(mode);
+  const getThemeBadge = () => {
+    if (activeThemeId === "heatwave") {
+      return (
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/20 text-orange-600 border border-orange-400/40 text-xs font-semibold">
+          <Flame className="w-3.5 h-3.5 text-orange-500 animate-pulse" />
+          <span>Active Atmosphere: Extreme Heatwave</span>
+        </div>
+      );
     }
+    if (activeThemeId === "sunny") {
+      return (
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/15 text-sky-700 border border-sky-400/30 text-xs font-semibold">
+          <Sun className="w-3.5 h-3.5 text-amber-500" />
+          <span>Active Atmosphere: Sunny Daylight</span>
+        </div>
+      );
+    }
+    return (
+      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/30 text-xs font-semibold">
+        <CloudRain className="w-3.5 h-3.5 text-cyan-400" />
+        <span>Active Atmosphere: Rainy / Night Glassmorphism</span>
+      </div>
+    );
   };
 
   return (
     <section className={`w-full py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto transition-colors duration-500 ${className}`}>
       
-      {/* Search Bar & Theme Mode Switcher */}
-      <div className="w-full max-w-3xl mx-auto mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="w-full flex-1">
-          <LocationSearch
-            onSelectLocation={handleSelectLocation}
-            placeholder="Search for a city, place or location..."
-          />
-        </div>
+      {/* Top Search Bar & Auto Atmosphere Status */}
+      <div className="w-full max-w-xl mx-auto mb-8 flex flex-col items-center gap-3">
+        <LocationSearch
+          onSelectLocation={handleSelectLocation}
+          placeholder="Search for a city, place or location..."
+          theme={theme}
+        />
 
-        {/* Dynamic Theme Switcher Controls */}
-        <div className="flex items-center gap-1 p-1 rounded-full bg-black/30 backdrop-blur-md border border-white/10 text-xs font-semibold shrink-0 shadow-lg">
-          <button
-            type="button"
-            onClick={() => handleSetTheme("auto")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all cursor-pointer ${
-              themeMode === "auto"
-                ? "bg-[#22D3EE] text-[#050B14] shadow-md font-bold"
-                : "text-slate-300 hover:text-white"
-            }`}
-            title="Auto detect theme from live weather conditions"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Auto</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleSetTheme("sunny")}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full transition-all cursor-pointer ${
-              activeThemeId === "sunny" && themeMode !== "auto"
-                ? "bg-amber-400 text-[#050B14] shadow-md font-bold"
-                : "text-slate-300 hover:text-white"
-            }`}
-            title="Theme A: Sunny Light Theme"
-          >
-            <Sun className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Sunny</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleSetTheme("rainy")}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full transition-all cursor-pointer ${
-              activeThemeId === "rainy" && themeMode !== "auto"
-                ? "bg-cyan-400 text-[#050B14] shadow-md font-bold"
-                : "text-slate-300 hover:text-white"
-            }`}
-            title="Theme B: Rainy Dark Glassmorphism"
-          >
-            <CloudRain className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Rainy</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleSetTheme("heatwave")}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full transition-all cursor-pointer ${
-              activeThemeId === "heatwave" && themeMode !== "auto"
-                ? "bg-orange-500 text-white shadow-md font-bold"
-                : "text-slate-300 hover:text-white"
-            }`}
-            title="Theme C: Extreme Heatwave Alert"
-          >
-            <Flame className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Heat</span>
-          </button>
-        </div>
+        {/* Live Weather Theme Indicator Badge */}
+        {!loading && weather && (
+          <div className="flex items-center gap-2">
+            {getThemeBadge()}
+          </div>
+        )}
       </div>
 
       {/* Loading state */}
