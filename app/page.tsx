@@ -81,6 +81,7 @@ export default function Home() {
           if (tab === "Forecast") handleGetForecast();
           if (tab === "Climate") setIsExplorerOpen(true);
         }}
+        onSelectLocation={(loc) => handleGetForecast(loc)}
       />
 
       {/* 2. Hero Section with 4K Earth Video Background & Text Animations */}
