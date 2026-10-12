@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/navigation/Navbar";
 import { HomeSearchBar } from "@/components/home/HomeSearchBar";
-import { GlobePlaceholder } from "@/components/globe/GlobePlaceholder";
+import { GlobeScene } from "@/components/globe/GlobeScene";
 import { UseMyLocationButton } from "@/components/location/UseMyLocationButton";
 import { LocationSearch } from "@/components/location/LocationSearch";
 import { LocationData } from "@/types/location";
@@ -258,19 +258,37 @@ export default function Home() {
             <LocationSearch onSelectLocation={handleSelectLocation} />
           </div>
 
-          {/* Central Globe with Zoom & Drag Controls */}
-          <div className="relative z-20 flex-1 flex items-center justify-center my-4">
-            <GlobePlaceholder selectedLocation={currentLocation} />
+          {/* Central 3D Globe with Real Earth Rendering, Inertia Drag & Zoom */}
+          <div className="relative z-20 flex-1 flex items-center justify-center my-2 w-full max-h-[62vh]">
+            <GlobeScene
+              selectedLocation={currentLocation}
+              onSelectLocation={handleSelectLocation}
+              onOpenForecast={(loc) => handleGetForecast(loc)}
+              className="w-full h-full"
+            />
           </div>
 
-          {/* Bottom Neon "USE YOUR LOCATION" button & instructions */}
+          {/* Bottom Controls: USE YOUR LOCATION, View Forecast & instructions */}
           <div className="relative z-30 flex flex-col items-center gap-3 pb-6">
-            <UseMyLocationButton onLocationFound={handleSelectLocation} />
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <UseMyLocationButton onLocationFound={handleSelectLocation} />
+
+              <button
+                type="button"
+                onClick={() => handleGetForecast()}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-cyan-500/20 hover:bg-cyan-500/35 text-cyan-300 font-semibold text-xs sm:text-sm border border-cyan-400/50 shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all cursor-pointer hover:scale-105 active:scale-95"
+              >
+                <span>View {currentLocation.name} Forecast</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
 
             <p className="text-xs sm:text-sm text-slate-400 font-medium tracking-wide flex items-center gap-2 text-center">
               <span>Drag to rotate Earth</span>
               <span className="text-cyan-400">•</span>
-              <span>Click pin to target destination</span>
+              <span>Pinch or scroll to zoom</span>
+              <span className="text-cyan-400">•</span>
+              <span>Smooth auto-orient on search</span>
             </p>
           </div>
         </motion.div>
