@@ -123,10 +123,25 @@ async function _doFetch(
       };
     });
 
-    // Hourly points: 8 points over next 24 hours, spaced by 3h
+    // Hourly points: 8 points over next 24 hours, spaced by 3h, starting from current time
     const hourlyPoints: HourlyPoint[] = [];
     if (hourly && Array.isArray(hourly.time)) {
-      for (let i = 0; i < 24 && i < hourly.time.length; i += 3) {
+      let startIdx = 0;
+      if (current?.time) {
+        const currentHourPrefix = current.time.slice(0, 13);
+        const foundIdx = hourly.time.findIndex((t: string) => t.startsWith(currentHourPrefix));
+        if (foundIdx !== -1) {
+          startIdx = foundIdx;
+        } else {
+          const currentTimeNum = new Date(current.time).getTime();
+          const approxIdx = hourly.time.findIndex((t: string) => new Date(t).getTime() >= currentTimeNum);
+          if (approxIdx !== -1) startIdx = approxIdx;
+        }
+      }
+
+      for (let count = 0; count < 8; count++) {
+        const i = startIdx + count * 3;
+        if (i >= hourly.time.length) break;
         const timeStr = hourly.time[i];
         const dateObj = new Date(timeStr);
         let hours = dateObj.getHours();
@@ -134,7 +149,7 @@ async function _doFetch(
         hours = hours % 12 || 12;
         hourlyPoints.push({
           time: timeStr,
-          hourLabel: `${hours} ${ampm}`,
+          hourLabel: count === 0 ? "Now" : `${hours} ${ampm}`,
           temperature: Math.round(hourly.temperature_2m[i] ?? 20),
         });
       }

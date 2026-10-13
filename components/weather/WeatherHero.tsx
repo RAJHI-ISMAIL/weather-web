@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, ChevronDown, Sun, Cloud, CloudRain, CloudLightning, CloudDrizzle, CloudSun, Snowflake, Flame } from "lucide-react";
+import { MapPin, ChevronDown, Sun, Cloud, CloudRain, CloudLightning, CloudDrizzle, CloudSun, Snowflake } from "lucide-react";
 import { WeatherData } from "@/types/weather";
 import { ThemeTokens } from "@/lib/theme";
 
@@ -68,9 +68,9 @@ export function WeatherHero({ weather, theme, onChangeLocationClick }: WeatherHe
         {/* Big Temperature Hero Number + Icon */}
         <div className="flex items-center gap-4">
           <div className="shrink-0">{renderWeatherIcon()}</div>
-          <div className={`flex items-start text-7xl sm:text-8xl font-sans font-bold tracking-tight leading-none ${theme.heroTempColor}`}>
+          <div className={`flex items-start text-6xl sm:text-7xl md:text-8xl font-sans font-bold tracking-tight leading-none ${theme.heroTempColor}`}>
             <span>{current.temperature}</span>
-            <span className={`text-4xl sm:text-5xl font-sans -top-1 relative ml-1 ${theme.heroUnitColor}`}>
+            <span className={`text-3xl sm:text-4xl md:text-5xl font-sans -top-1 relative ml-1 ${theme.heroUnitColor}`}>
               °C
             </span>
           </div>

@@ -23,9 +23,20 @@ export function GlobePlaceCard({
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Synchronize loading state when location changes during render
+  const [prevLoc, setPrevLoc] = useState(location);
+  if (
+    prevLoc.latitude !== location.latitude ||
+    prevLoc.longitude !== location.longitude ||
+    prevLoc.name !== location.name
+  ) {
+    setPrevLoc(location);
+    setLoading(true);
+    setWeather(null);
+  }
+
   useEffect(() => {
     let isMounted = true;
-    setLoading(true);
 
     async function loadQuickWeather() {
       try {

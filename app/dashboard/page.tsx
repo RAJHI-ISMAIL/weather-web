@@ -46,7 +46,16 @@ function DashboardContent() {
             muted
             loop
             playsInline
-            className="fixed inset-0 w-full h-full object-cover -z-20 pointer-events-none"
+            className="fixed inset-0 w-full h-full object-cover -z-20 pointer-events-none hidden lg:block"
+            src="/sunny-bg.mp4"
+          />
+          <video
+            key="sunny-bg-mobile"
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="fixed inset-0 w-full h-full object-cover -z-20 pointer-events-none lg:hidden"
             src="/sunny-bg.mp4"
           />
           {/* Vignette: darken edges so center video is vivid, content readable */}
@@ -58,7 +67,7 @@ function DashboardContent() {
           />
           {/* Animated golden sun-shimmer ring */}
           <div
-            className="fixed pointer-events-none -z-10"
+            className="fixed pointer-events-none -z-10 hidden lg:block"
             style={{
               top: '8%',
               right: '8%',
@@ -88,7 +97,16 @@ function DashboardContent() {
             muted
             loop
             playsInline
-            className="fixed inset-0 w-full h-full object-cover -z-20 pointer-events-none"
+            className="fixed inset-0 w-full h-full object-cover -z-20 pointer-events-none hidden lg:block"
+            src="/heatwave-bg.mp4"
+          />
+          <video
+            key="heatwave-bg-mobile"
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="fixed inset-0 w-full h-full object-cover -z-20 pointer-events-none lg:hidden"
             src="/heatwave-bg.mp4"
           />
           {/* Warm vignette: keeps center video vivid while keeping white/glass cards and text readable */}
@@ -101,7 +119,7 @@ function DashboardContent() {
           />
           {/* Heat haze thermal glow orb */}
           <div
-            className="fixed pointer-events-none -z-10"
+            className="fixed pointer-events-none -z-10 hidden lg:block"
             style={{
               top: '6%',
               right: '8%',

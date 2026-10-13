@@ -1,5 +1,18 @@
 import type { Metadata } from "next";
+import { Inter, Fraunces } from "next/font/google";
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "TEMPORA — Your world. In every forecast.",
@@ -14,16 +27,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Inter:wght@300;400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="min-h-screen bg-[#050B14] text-[#F8FAFC] antialiased selection:bg-[#22D3EE]/30 selection:text-[#F8FAFC]">
+    <html lang="en" className={`dark ${inter.variable} ${fraunces.variable}`}>
+      <body className="min-h-screen bg-[#050B14] text-[#F8FAFC] antialiased selection:bg-[#22D3EE]/30 selection:text-[#F8FAFC] font-sans">
         {children}
       </body>
     </html>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Search, MapPin, Sun, Loader2, X, Compass, ChevronRight } from "lucide-react";
 import { useLocationSearch } from "@/hooks/useLocationSearch";
@@ -23,7 +23,6 @@ export function HomeSearchBar({
   className = "",
 }: HomeSearchBarProps) {
   const { query, setQuery, results, loading, isOpen, setIsOpen, clearSearch } = useLocationSearch();
-  const [isEditingLocation, setIsEditingLocation] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -31,7 +30,6 @@ export function HomeSearchBar({
     function handleClickOutside(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
-        setIsEditingLocation(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -41,7 +39,6 @@ export function HomeSearchBar({
   const handleSelect = (loc: LocationData) => {
     onSelectLocation(loc);
     clearSearch();
-    setIsEditingLocation(false);
   };
 
   const handleForecastClick = () => {
@@ -72,7 +69,7 @@ export function HomeSearchBar({
       className={`relative w-full max-w-4xl mx-auto px-4 ${className}`}
     >
       {/* Floating White Pill Container */}
-      <div className="relative flex flex-col md:flex-row items-stretch md:items-center justify-between p-2 md:p-2.5 rounded-3xl md:rounded-full bg-white text-slate-800 shadow-[0_16px_50px_rgba(10,22,40,0.18)] border border-slate-100 hover:border-cyan-300/60 hover:shadow-[0_20px_60px_rgba(34,211,238,0.22)] transition-all duration-300 gap-3 md:gap-0">
+      <div className="relative flex flex-col md:flex-row items-stretch md:items-center justify-between p-2.5 rounded-3xl md:rounded-full bg-white text-slate-800 shadow-[0_16px_50px_rgba(10,22,40,0.18)] border border-slate-100 hover:border-cyan-300/60 hover:shadow-[0_20px_60px_rgba(34,211,238,0.22)] transition-all duration-300 gap-2.5 md:gap-0">
         
         {/* Left Section: Search Input */}
         <div className="flex items-center flex-1 pl-3 md:pl-4 pr-2">
@@ -81,12 +78,8 @@ export function HomeSearchBar({
             ref={inputRef}
             type="text"
             value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setIsEditingLocation(true);
-            }}
+            onChange={(e) => setQuery(e.target.value)}
             onFocus={() => {
-              setIsEditingLocation(true);
               if (results.length > 0) setIsOpen(true);
             }}
             onKeyDown={handleKeyDown}
@@ -112,40 +105,39 @@ export function HomeSearchBar({
         {/* Divider 1 */}
         <div className="hidden md:block w-px h-8 bg-slate-200 mx-2" />
 
-        {/* Middle Section: Active City / Country */}
-        <button
-          type="button"
-          onClick={() => {
-            inputRef.current?.focus();
-            setIsEditingLocation(true);
-          }}
-          className="flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-0 text-left hover:bg-slate-50 md:rounded-full transition-colors cursor-pointer group"
-          title="Click to search another location"
-        >
-          <MapPin className="w-4 h-4 text-emerald-600 shrink-0 group-hover:scale-110 transition-transform" />
-          <span className="text-sm font-semibold text-slate-700 whitespace-nowrap group-hover:text-cyan-700">
-            {currentLocation.name}
-            {currentLocation.country ? `, ${currentLocation.country}` : ""}
-          </span>
-          <span className="text-slate-400 text-xs font-mono ml-0.5">/</span>
-        </button>
+        {/* Mobile Sub-row for Location and Weather / Desktop Contents */}
+        <div className="flex items-center justify-between md:contents px-2 md:px-0">
+          {/* Middle Section: Active City / Country */}
+          <button
+            type="button"
+            onClick={() => inputRef.current?.focus()}
+            className="flex items-center gap-1.5 px-2 md:px-4 py-1 md:py-0 text-left hover:bg-slate-50 md:rounded-full transition-colors cursor-pointer group min-w-0"
+            title="Click to search another location"
+          >
+            <MapPin className="w-4 h-4 text-emerald-600 shrink-0 group-hover:scale-110 transition-transform" />
+            <span className="text-xs sm:text-sm font-semibold text-slate-700 truncate group-hover:text-cyan-700 max-w-[140px] sm:max-w-[200px] md:max-w-none">
+              {currentLocation.name}
+              {currentLocation.country ? `, ${currentLocation.country}` : ""}
+            </span>
+          </button>
 
-        {/* Divider 2 */}
-        <div className="hidden md:block w-px h-8 bg-slate-200 mx-2" />
+          {/* Divider 2 */}
+          <div className="hidden md:block w-px h-8 bg-slate-200 mx-2" />
 
-        {/* Weather Quick Stat: Sun + Temp */}
-        <div className="flex items-center gap-2 px-3 md:px-4 py-1 md:py-0 shrink-0">
-          <Sun className="w-5 h-5 text-amber-500 shrink-0 fill-amber-500/20 animate-spin-slow" />
-          <span className="text-lg font-bold text-slate-900 tracking-tight font-sans">
-            {temp}
-          </span>
+          {/* Weather Quick Stat: Sun + Temp */}
+          <div className="flex items-center gap-1.5 px-2 md:px-4 py-1 md:py-0 shrink-0">
+            <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 shrink-0 fill-amber-500/20 animate-spin-slow" />
+            <span className="text-base sm:text-lg font-bold text-slate-900 tracking-tight font-sans">
+              {temp}
+            </span>
+          </div>
         </div>
 
         {/* Right CTA Button: Blue Pill "Get forecast >" */}
         <button
           type="button"
           onClick={handleForecastClick}
-          className="flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-[#52B1E4] hover:bg-[#43A0D3] active:scale-95 text-white font-medium text-sm transition-all duration-200 shadow-[0_4px_16px_rgba(82,177,228,0.4)] shrink-0 cursor-pointer group"
+          className="flex items-center justify-center gap-2 px-6 py-2.5 md:py-3 rounded-full bg-[#52B1E4] hover:bg-[#43A0D3] active:scale-95 text-white font-semibold text-xs sm:text-sm transition-all duration-200 shadow-[0_4px_16px_rgba(82,177,228,0.4)] shrink-0 cursor-pointer group"
         >
           <span>Get forecast</span>
           <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />

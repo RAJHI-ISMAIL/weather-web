@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Sun, Cloud, Wind, Droplets, Thermometer, Compass, ArrowUpRight } from "lucide-react";
+import { Cloud, Wind, Droplets, Thermometer, Compass, ArrowRight } from "lucide-react";
 import { WeatherData } from "@/types/weather";
 import { LocationData } from "@/types/location";
 
@@ -22,7 +22,7 @@ export function HomeFeatureSection({ location, weather, onExploreMore }: HomeFea
   const feelsLike = weather ? weather.current.feelsLike : 25;
 
   return (
-    <section className="w-full bg-[#FAFBFD] text-slate-800 pt-20 pb-28 px-4 sm:px-6 lg:px-8 border-t border-slate-200/80 overflow-hidden">
+    <section id="feature-section" className="w-full bg-[#FAFBFD] text-slate-800 pt-20 pb-28 px-4 sm:px-6 lg:px-8 border-t border-slate-200/80 overflow-hidden">
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
         
         {/* Left Weather Preview Card */}
@@ -125,7 +125,18 @@ export function HomeFeatureSection({ location, weather, onExploreMore }: HomeFea
             stunning 3D visuals and deeper insights into the climate of our planet.
           </p>
 
-          <div className="pt-2 flex items-center gap-4">
+          <div className="pt-2 flex flex-wrap items-center gap-4">
+            {onExploreMore && (
+              <button
+                type="button"
+                onClick={onExploreMore}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm shadow-md transition-all cursor-pointer active:scale-95"
+              >
+                <span>View Full Forecast</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+
             <div className="flex items-center -space-x-2">
               <span className="w-9 h-9 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-500 border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow-md">
                 3D

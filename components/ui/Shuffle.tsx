@@ -3,7 +3,6 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-// @ts-ignore
 import { SplitText as GSAPSplitText } from 'gsap/SplitText';
 import { useGSAP } from '@gsap/react';
 import './Shuffle.css';
@@ -65,17 +64,33 @@ const Shuffle: React.FC<ShuffleProps> = ({
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [ready, setReady] = useState(false);
 
-  const splitRef = useRef<any>(null);
+  const splitRef = useRef<GSAPSplitText | null>(null);
   const wrappersRef = useRef<HTMLElement[]>([]);
   const tlRef = useRef<gsap.core.Timeline | null>(null);
   const playingRef = useRef(false);
   const hoverHandlerRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
+    let active = true;
     if ('fonts' in document) {
-      if ((document as any).fonts.status === 'loaded') setFontsLoaded(true);
-      else (document as any).fonts.ready.then(() => setFontsLoaded(true));
-    } else setFontsLoaded(true);
+      const fontFaceSet = (document as unknown as { fonts: FontFaceSet }).fonts;
+      if (fontFaceSet.status === 'loaded') {
+        queueMicrotask(() => {
+          if (active) setFontsLoaded(true);
+        });
+      } else {
+        fontFaceSet.ready.then(() => {
+          if (active) setFontsLoaded(true);
+        });
+      }
+    } else {
+      queueMicrotask(() => {
+        if (active) setFontsLoaded(true);
+      });
+    }
+    return () => {
+      active = false;
+    };
   }, []);
 
   const scrollTriggerStart = useMemo(() => {
@@ -140,7 +155,7 @@ const Shuffle: React.FC<ShuffleProps> = ({
           reduceWhiteSpace: false
         });
 
-        const chars: HTMLElement[] = splitRef.current.chars || [];
+        const chars: HTMLElement[] = (splitRef.current.chars || []) as HTMLElement[];
         wrappersRef.current = [];
 
         const rolls = Math.max(1, Math.floor(shuffleTimes));

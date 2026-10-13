@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   Globe,
   Search,
-  MapPin,
   Loader2,
   X,
   Compass,
@@ -33,10 +32,15 @@ export function Navbar({
   onSelectLocation,
 }: NavbarProps) {
   const [current, setCurrent] = useState(activeTab);
+  const [prevActiveTab, setPrevActiveTab] = useState(activeTab);
+  if (prevActiveTab !== activeTab) {
+    setPrevActiveTab(activeTab);
+    setCurrent(activeTab);
+  }
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
-  const [isDesktopSearchFocused, setIsDesktopSearchFocused] = useState(false);
 
   const router = useRouter();
   const navContainerRef = useRef<HTMLDivElement>(null);
@@ -47,21 +51,17 @@ export function Navbar({
   const { query, setQuery, results, loading, isOpen, setIsOpen, clearSearch } =
     useLocationSearch(250);
 
-  // Sync internal active tab if prop changes
-  useEffect(() => {
-    if (activeTab) setCurrent(activeTab);
-  }, [activeTab]);
-
   // Focus mobile input when mobile search opens
   useEffect(() => {
     if (isMobileSearchOpen) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         mobileSearchInputRef.current?.focus();
       }, 100);
+      return () => clearTimeout(timer);
     } else {
       clearSearch();
     }
-  }, [isMobileSearchOpen]);
+  }, [isMobileSearchOpen, clearSearch]);
 
   // Global keyboard shortcut: '/' or 'Cmd+K' / 'Ctrl+K' to focus search
   useEffect(() => {
@@ -90,7 +90,6 @@ export function Navbar({
         !navContainerRef.current.contains(e.target as Node)
       ) {
         setIsOpen(false);
-        setIsDesktopSearchFocused(false);
         setIsMobileMenuOpen(false);
       }
     }
@@ -136,6 +135,8 @@ export function Navbar({
       router.push("/dashboard");
     } else if (id === "Discover") {
       router.push("/");
+    } else if (path) {
+      router.push(path);
     }
   };
 
@@ -144,7 +145,6 @@ export function Navbar({
     setIsOpen(false);
     setIsMobileSearchOpen(false);
     setIsMobileMenuOpen(false);
-    setIsDesktopSearchFocused(false);
 
     if (onSelectLocation) {
       onSelectLocation(loc);
@@ -172,7 +172,6 @@ export function Navbar({
     } else if (e.key === "Escape") {
       setIsOpen(false);
       setIsMobileSearchOpen(false);
-      setIsDesktopSearchFocused(false);
     }
   };
 
@@ -216,7 +215,7 @@ export function Navbar({
         >
           {/* Mobile In-Bar Search View: Active state replaces bar with full search input */}
           {isMobileSearchOpen ? (
-            <div className="flex md:hidden items-center w-full gap-2 animate-fadeIn">
+            <div className="flex md:hidden items-center w-full gap-2 animate-fadeIn fixed top-0 left-0 right-0 z-50 bg-[#050B14] py-4 px-4 sm:static sm:py-0 sm:px-0 sm:bg-transparent">
               <button
                 type="button"
                 onClick={() => setIsMobileSearchOpen(false)}
@@ -227,9 +226,9 @@ export function Navbar({
               </button>
 
               <div
-                className={`relative flex items-center flex-1 h-9 px-3 rounded-full border transition-all ${searchInputBg}`}
+                className={`relative flex items-center flex-1 h-10 px-4 rounded-full border transition-all ${searchInputBg}`}
               >
-                <Search className={`w-3.5 h-3.5 mr-2 shrink-0 ${pinColor}`} />
+                <Search className={`w-4 h-4 mr-2 shrink-0 ${pinColor}`} />
                 <input
                   ref={mobileSearchInputRef}
                   type="text"
@@ -240,17 +239,18 @@ export function Navbar({
                   }}
                   onKeyDown={handleSearchKeyDown}
                   placeholder="Search city or location..."
-                  className="w-full bg-transparent text-xs outline-none pr-2 font-normal"
+                  className="w-full bg-transparent text-sm outline-none pr-2 font-normal"
+                  autoFocus
                 />
                 {loading ? (
-                  <Loader2 className={`w-3.5 h-3.5 animate-spin shrink-0 ${pinColor}`} />
+                  <Loader2 className={`w-4 h-4 animate-spin shrink-0 ${pinColor}`} />
                 ) : query ? (
                   <button
                     type="button"
                     onClick={clearSearch}
-                    className="p-0.5 text-slate-400 hover:text-white"
+                    className="p-1 text-slate-400 hover:text-white"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="w-4 h-4" />
                   </button>
                 ) : null}
               </div>
@@ -258,7 +258,7 @@ export function Navbar({
               <button
                 type="button"
                 onClick={() => setIsMobileSearchOpen(false)}
-                className="text-xs font-medium px-2 py-1 text-slate-400 hover:text-white shrink-0"
+                className="text-sm font-medium px-3 py-1 text-slate-400 hover:text-white shrink-0"
               >
                 Cancel
               </button>
@@ -368,7 +368,6 @@ export function Navbar({
                       setSelectedIndex(-1);
                     }}
                     onFocus={() => {
-                      setIsDesktopSearchFocused(true);
                       if (results.length > 0) setIsOpen(true);
                     }}
                     onKeyDown={handleSearchKeyDown}

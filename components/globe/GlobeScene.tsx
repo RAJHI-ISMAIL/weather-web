@@ -107,29 +107,33 @@ export function GlobeScene({
     }
   }, [isAutoRotating, isReady]);
 
-  // Sync incoming selectedLocation → fly to it and mark it
-  useEffect(() => {
-    if (!selectedLocation) return;
+  // Synchronize state with incoming selectedLocation prop during render without effect cascading
+  const [prevSelectedLoc, setPrevSelectedLoc] = useState(selectedLocation);
+  if (
+    selectedLocation &&
+    (prevSelectedLoc?.latitude !== selectedLocation.latitude ||
+      prevSelectedLoc?.longitude !== selectedLocation.longitude ||
+      prevSelectedLoc?.name !== selectedLocation.name)
+  ) {
+    setPrevSelectedLoc(selectedLocation);
     setActivePlace(selectedLocation);
-
-    const pin: GlobePoint = {
+    setSelectedPoint({
       lat: selectedLocation.latitude,
       lng: selectedLocation.longitude,
       name: selectedLocation.name,
       country: selectedLocation.country,
       size: 0.6,
       color: "#FFCB66",
-    };
-    setSelectedPoint(pin);
+    });
+  }
 
-    // Fly globe to that location Google Earth style
-    if (globeRef.current && isReady) {
-      globeRef.current.pointOfView(
-        { lat: selectedLocation.latitude, lng: selectedLocation.longitude, altitude: 1.5 },
-        1400
-      );
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Fly globe camera to incoming selectedLocation
+  useEffect(() => {
+    if (!selectedLocation || !globeRef.current || !isReady) return;
+    globeRef.current.pointOfView(
+      { lat: selectedLocation.latitude, lng: selectedLocation.longitude, altitude: 1.5 },
+      1400
+    );
   }, [selectedLocation, isReady]);
 
   // Combined points: city pins + selected location marker

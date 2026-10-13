@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import {
   Sun,
   Cloud,
@@ -59,7 +59,7 @@ export function ForecastCarousel({
 }: ForecastCarouselProps) {
   const [viewMode, setViewMode] = useState<"3d" | "strip">("3d");
 
-  const getDayIcon = (code: number, className = "w-7 h-7") => {
+  const getDayIcon = useCallback((code: number, className = "w-7 h-7") => {
     if (theme.id === "heatwave") {
       return <Sun className={`${className} text-amber-300 fill-amber-300/30`} />;
     }
@@ -71,7 +71,7 @@ export function ForecastCarousel({
     if (code >= 71 && code <= 77) return <Snowflake className={`${className} text-sky-200`} />;
     if (code >= 95) return <CloudLightning className={`${className} text-amber-300`} />;
     return <Sun className={`${className} text-amber-400`} />;
-  };
+  }, [theme.id]);
 
   // Convert daily forecast into 3D CircularCarousel items
   const carouselItems: CarouselItem[] = useMemo(() => {
@@ -131,7 +131,7 @@ export function ForecastCarousel({
         ),
       };
     });
-  }, [daily, theme.id, selectedIndex]);
+  }, [daily, theme.id, selectedIndex, getDayIcon]);
 
   const fadeColor = theme.isDark ? "#050B14" : theme.id === "heatwave" ? "#FFF8F0" : "#E0F2FE";
 
@@ -178,32 +178,32 @@ export function ForecastCarousel({
 
       {/* 3D Circular Carousel Mode */}
       {viewMode === "3d" ? (
-        <div className="relative w-full h-[460px] sm:h-[500px] rounded-3xl overflow-hidden bg-gradient-to-b from-white/[0.04] to-transparent border border-white/10 p-2">
+        <div className="relative w-full h-[400px] sm:h-[460px] lg:h-[500px] rounded-3xl overflow-hidden bg-gradient-to-b from-white/[0.04] to-transparent border border-white/10 p-2">
           <CircularCarousel
             items={carouselItems}
             preset="cylinder"
             intro="rise"
-            cardWidth={175}
-            aspectRatio={0.72}
-            gap={28}
+            cardWidth={160}
+            aspectRatio={0.75}
+            gap={20}
             speed={8}
             curve={0}
             tilt={-6}
-            perspective={2200}
+            perspective={2000}
             autoplay="drift"
             pauseOnHover={true}
             focusOnClick={true}
             captions={true}
             fadeColor={fadeColor}
             depthFade={0.5}
-            cornerRadius={16}
+            cornerRadius={14}
             onChange={(idx) => onSelectDay?.(idx)}
             onItemClick={(_item, idx) => onSelectDay?.(idx)}
           />
         </div>
       ) : (
         /* Classic Flat Horizontal Strip Mode */
-        <div className="flex items-center gap-3.5 overflow-x-auto pb-4 pt-1 px-1 scrollbar-none snap-x snap-mandatory">
+        <div className="flex items-center gap-3 overflow-x-auto pb-4 pt-1 px-2 scrollbar-none snap-x snap-mandatory">
           {daily.map((day, idx) => {
             const isActive = idx === selectedIndex;
             const bgClass = theme.forecastCardBg(isActive);
@@ -214,12 +214,12 @@ export function ForecastCarousel({
                 key={`${day.date}-${idx}`}
                 type="button"
                 onClick={() => onSelectDay?.(idx)}
-                className={`flex-1 min-w-[130px] sm:min-w-[140px] h-[190px] rounded-2xl p-5 flex flex-col justify-between items-start text-left transition-all duration-300 snap-start cursor-pointer focus:outline-none ${bgClass} ${borderClass} ${
+                className={`flex-1 min-w-[120px] sm:min-w-[130px] md:min-w-[140px] h-[170px] sm:h-[190px] rounded-2xl p-4 sm:p-5 flex flex-col justify-between items-start text-left transition-all duration-300 snap-start cursor-pointer focus:outline-none ${bgClass} ${borderClass} ${
                   isActive ? "scale-[1.02]" : "hover:scale-[1.01]"
                 }`}
               >
                 <div>
-                  <div className="flex items-center justify-between w-full mb-3">
+                  <div className="flex items-center justify-between w-full mb-2">
                     <span className={`text-sm font-bold font-sans ${theme.forecastCardText}`}>
                       {day.dayName}
                     </span>
@@ -231,7 +231,7 @@ export function ForecastCarousel({
                     )}
                   </div>
 
-                  <div className="mb-2">{getDayIcon(day.weatherCode)}</div>
+                  <div className="mb-2">{getDayIcon(day.weatherCode, "w-6 h-6")}</div>
 
                   <div
                     className={`text-xs font-medium line-clamp-1 ${
@@ -243,7 +243,7 @@ export function ForecastCarousel({
                 </div>
 
                 <div className="flex items-baseline gap-2 font-mono">
-                  <span className={`text-base sm:text-lg font-bold font-sans ${theme.forecastCardText}`}>
+                  <span className={`text-sm sm:text-base font-bold font-sans ${theme.forecastCardText}`}>
                     {day.tempMax}°
                   </span>
                   <span

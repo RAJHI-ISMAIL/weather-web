@@ -9,7 +9,7 @@ export interface CarouselItem {
   title?: string;
   subtitle?: string;
   cardContent?: ReactNode;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 const photo = (id: string) => `https://images.unsplash.com/${id}?w=900&q=80&auto=format&fit=max&sat=-100`;
@@ -315,8 +315,7 @@ export default function CircularCarousel({
   const [active, setActive] = useState(0);
   const [ready, setReady] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const readyRef = useRef(false);
-  readyRef.current = ready;
+  const readyRef = useRef(ready);
 
   const stateRef = useRef<{
     angle: number;
@@ -342,7 +341,7 @@ export default function CircularCarousel({
     holdUntil: number;
     stepAt: number;
     suppressClick: boolean;
-    wheelTimer: any;
+    wheelTimer?: ReturnType<typeof setTimeout>;
     fit: number;
     shift: number;
     drop: number;
@@ -363,7 +362,7 @@ export default function CircularCarousel({
     holdUntil: 0,
     stepAt: 0,
     suppressClick: false,
-    wheelTimer: 0,
+    wheelTimer: undefined,
     fit: 1,
     shift: 0,
     drop: 0,
@@ -395,10 +394,7 @@ export default function CircularCarousel({
     reduced
   };
   const settingsRef = useRef(settings);
-  settingsRef.current = settings;
-
   const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
 
   const dragSign = layout.inward ? -1 : 1;
   const directionSign = (direction === 'right' ? 1 : -1) * dragSign;
@@ -409,9 +405,16 @@ export default function CircularCarousel({
   }, [directionSign]);
 
   const incomingRef = useRef(incoming);
-  incomingRef.current = incoming;
   const listRef = useRef(list);
-  listRef.current = list;
+
+  useEffect(() => {
+    readyRef.current = ready;
+    settingsRef.current = settings;
+    onChangeRef.current = onChange;
+    incomingRef.current = incoming;
+    listRef.current = list;
+  });
+
   const sourcesKey = incoming.map(item => item.src).join('|');
 
   useEffect(() => {
@@ -562,7 +565,7 @@ export default function CircularCarousel({
           if (s.intro === 'none') state.introDone = true;
           else state.intro = { type: s.intro, start: now };
         }
-        if (state.intro && now - state.intro.start >= (INTRO_LENGTH as any)[state.intro.type]) {
+        if (state.intro && now - state.intro.start >= (INTRO_LENGTH as Record<string, number>)[state.intro.type]) {
           state.intro = null;
           state.introDone = true;
         }
@@ -733,7 +736,7 @@ export default function CircularCarousel({
       state.angle -= delta * perPixel * (s.layout.inward ? -1 : 1);
       state.velocity = -delta * perPixel * (s.layout.inward ? -1 : 1) * 30;
       state.holdUntil = performance.now() + 1600;
-      clearTimeout(state.wheelTimer);
+      if (state.wheelTimer) clearTimeout(state.wheelTimer);
       state.wheelTimer = setTimeout(() => {
         if (settingsRef.current.snap) state.target = nearest(state.angle + state.velocity * 0.12);
         wake();
@@ -751,7 +754,7 @@ export default function CircularCarousel({
       cancelAnimationFrame(raf);
       resize.disconnect();
       io.disconnect();
-      clearTimeout(state.wheelTimer);
+      if (state.wheelTimer) clearTimeout(state.wheelTimer);
       root.removeEventListener('wheel', onWheel);
       document.removeEventListener('visibilitychange', onVisibility);
     };
@@ -913,7 +916,12 @@ export default function CircularCarousel({
   const current = list[active] || list[0];
   const label = current ? current.title || current.alt || `Image ${active + 1}` : '';
 
-  const renderTile = (item: CarouselItem, tile: any, back: boolean, index: number) => {
+  const renderTile = (
+    item: CarouselItem,
+    tile: { index: number; total: number; start: number; end: number; size: number; move: string },
+    back: boolean,
+    index: number
+  ) => {
     const strip = back ? tile.total - 1 - tile.index : tile.index;
     const first = strip === 0;
     const last = strip === tile.total - 1;
@@ -949,6 +957,7 @@ export default function CircularCarousel({
           className="circular-carousel__frame"
           style={{ height: axis === 'x' ? size : cardH, borderRadius: frameRadius }}
         >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             className="circular-carousel__photo"
             src={item.src}
@@ -958,6 +967,7 @@ export default function CircularCarousel({
             style={photoStyle}
           />
           {gone && (
+            /* eslint-disable-next-line @next/next/no-img-element */
             <img
               key={`leaving-${leaving.id}`}
               className="circular-carousel__photo circular-carousel__photo--leaving"

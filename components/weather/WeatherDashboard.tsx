@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { WeatherHero } from "@/components/weather/WeatherHero";
 import { ForecastCarousel } from "@/components/weather/ForecastCarousel";
 import { TemperatureChart } from "@/components/weather/TemperatureChart";
@@ -12,7 +12,7 @@ import { LocationSearch } from "@/components/location/LocationSearch";
 import { useWeather } from "@/hooks/useWeather";
 import { LocationData } from "@/types/location";
 import { THEMES, getAutoTheme, ThemeId } from "@/lib/theme";
-import { Sparkles, Sun, CloudRain, Flame } from "lucide-react";
+import { Sun, CloudRain, Flame } from "lucide-react";
 
 interface WeatherDashboardProps {
   initialLocation?: LocationData;
@@ -30,13 +30,22 @@ export function WeatherDashboard({
   className = "",
   onThemeChange,
 }: WeatherDashboardProps) {
-  const [location, setLocation] = useState<LocationData>(initialLocation);
+  const [customLocation, setCustomLocation] = useState<LocationData | null>(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0);
 
-  useEffect(() => {
-    setLocation(initialLocation);
+  // Synchronize state with incoming initialLocation prop during render without effect cascade
+  const [prevInitLocation, setPrevInitLocation] = useState(initialLocation);
+  if (
+    prevInitLocation.latitude !== initialLocation.latitude ||
+    prevInitLocation.longitude !== initialLocation.longitude ||
+    prevInitLocation.name !== initialLocation.name
+  ) {
+    setPrevInitLocation(initialLocation);
+    setCustomLocation(null);
     setSelectedDayIndex(0);
-  }, [initialLocation.name, initialLocation.latitude, initialLocation.longitude, initialLocation.country]);
+  }
+
+  const location = customLocation ?? initialLocation;
 
   const { weather, loading, error, refetch } = useWeather(
     location.latitude,
@@ -46,15 +55,14 @@ export function WeatherDashboard({
   );
 
   // Automatically determine theme strictly based on live meteorological data
-  const activeThemeId: ThemeId = useMemo(() => {
-    if (!weather) return "rainy";
-    return getAutoTheme(
-      weather.current.weatherCode,
-      weather.current.temperature,
-      weather.current.isDay,
-      weather.alerts
-    );
-  }, [weather]);
+  const activeThemeId: ThemeId = weather
+    ? getAutoTheme(
+        weather.current.weatherCode,
+        weather.current.temperature,
+        weather.current.isDay,
+        weather.alerts
+      )
+    : "rainy";
 
   // Synchronize parent page background with active weather theme
   useEffect(() => {
@@ -66,7 +74,7 @@ export function WeatherDashboard({
   const theme = THEMES[activeThemeId];
 
   const handleSelectLocation = (loc: LocationData) => {
-    setLocation(loc);
+    setCustomLocation(loc);
     setSelectedDayIndex(0);
   };
 

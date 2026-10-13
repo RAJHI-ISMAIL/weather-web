@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { LocationData } from "@/types/location";
 import { searchLocations } from "@/lib/api/geocoding";
 
@@ -9,22 +9,20 @@ export function useLocationSearch(debounceMs = 300) {
   const [results, setResults] = useState<LocationData[]>([]);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-    }
-
     const trimmed = query.trim();
     if (trimmed.length < 2) {
-      setResults([]);
-      setLoading(false);
-      return;
+      const clearTimer = setTimeout(() => {
+        setResults([]);
+        setLoading(false);
+        setIsOpen(false);
+      }, 0);
+      return () => clearTimeout(clearTimer);
     }
 
-    setLoading(true);
-    timerRef.current = setTimeout(async () => {
+    const searchTimer = setTimeout(async () => {
+      setLoading(true);
       try {
         const locations = await searchLocations(trimmed);
         setResults(locations);
@@ -38,9 +36,7 @@ export function useLocationSearch(debounceMs = 300) {
     }, debounceMs);
 
     return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
+      clearTimeout(searchTimer);
     };
   }, [query, debounceMs]);
 

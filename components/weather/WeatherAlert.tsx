@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Flame, Wind, X } from "lucide-react";
+import { AlertTriangle, Flame, X } from "lucide-react";
 import { WeatherAlert as AlertType } from "@/types/weather";
 import { useState } from "react";
 

@@ -68,6 +68,7 @@ export function GlobePlaceholder({
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
+        onDoubleClick={onExploreClick}
       >
         {/* Cinematic Spinning Earth Video Asset */}
         <video

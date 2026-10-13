@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/navigation/Navbar";
 import { HomeSearchBar } from "@/components/home/HomeSearchBar";
+import { HomeFeatureSection } from "@/components/home/HomeFeatureSection";
 import { GlobeScene } from "@/components/globe/GlobeScene";
 import { UseMyLocationButton } from "@/components/location/UseMyLocationButton";
 import { LocationSearch } from "@/components/location/LocationSearch";
@@ -11,7 +12,7 @@ import { LocationData } from "@/types/location";
 import { WeatherData } from "@/types/weather";
 import { fetchWeatherData } from "@/lib/api/weather";
 import { useRouter } from "next/navigation";
-import { Globe, ChevronRight, X, Compass, Radio, Activity, Clock } from "lucide-react";
+import { Globe, ChevronRight, X, Compass, Radio, Clock } from "lucide-react";
 import Shuffle from "@/components/ui/Shuffle";
 
 export default function Home() {
@@ -77,15 +78,22 @@ export default function Home() {
       {/* 1. Floating Pill Navigation */}
       <Navbar
         onTabChange={(tab) => {
-          if (tab === "Discover") setIsExplorerOpen(false);
+          if (tab === "Discover") {
+            setIsExplorerOpen(false);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }
           if (tab === "Forecast") handleGetForecast();
-          if (tab === "Climate") setIsExplorerOpen(true);
+          if (tab === "Climate") {
+            setIsExplorerOpen(false);
+            const el = document.getElementById("feature-section");
+            el?.scrollIntoView({ behavior: "smooth" });
+          }
         }}
         onSelectLocation={(loc) => handleGetForecast(loc)}
       />
 
       {/* 2. Hero Section with 4K Earth Video Background & Text Animations */}
-      <section className="relative z-10 w-full min-h-[85vh] lg:min-h-[92vh] flex flex-col justify-center pt-28 pb-20 px-4 sm:px-6 lg:px-12 overflow-hidden">
+      <section className="relative z-10 w-full min-h-[85vh] lg:min-h-[92vh] flex flex-col justify-center pt-24 pb-16 px-4 sm:pt-28 sm:pb-20 sm:px-6 lg:px-12 overflow-hidden">
         
         {/* Full-bleed 4K Planet Earth Background Video */}
         <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none -z-10">
@@ -95,7 +103,15 @@ export default function Home() {
             loop
             muted
             playsInline
-            className="w-full h-full object-cover object-center lg:object-[65%_center] scale-105"
+            className="w-full h-full object-cover object-center lg:object-[65%_center] scale-105 hidden lg:block"
+          />
+          <video
+            src="/earth-spin.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover object-center scale-105 lg:hidden"
           />
 
           {/* Cinematic Vignettes & Contrast Overlays */}
@@ -104,7 +120,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-[#050B14]/25" />
 
           {/* Atmospheric Cyan Rim Light */}
-          <div className="absolute top-1/4 right-1/4 w-[520px] h-[520px] bg-cyan-500/15 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute top-1/4 right-1/4 w-[520px] h-[520px] bg-cyan-500/15 rounded-full blur-[140px] pointer-events-none hidden lg:block" />
         </div>
 
         {/* Hero Content Container */}
@@ -128,7 +144,7 @@ export default function Home() {
             transition={{ duration: 0.8, delay: 0.15, ease: "easeOut" }}
             className="space-y-1"
           >
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white font-serif leading-[1.05] max-w-3xl drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)]">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-white font-serif leading-[1.05] max-w-3xl drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)]">
               <Shuffle
                 text="Feel the world"
                 tag="span"
@@ -182,7 +198,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setIsExplorerOpen(true)}
-              className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-white/[0.08] hover:bg-white/[0.18] text-white font-semibold text-sm md:text-base border border-white/25 hover:border-cyan-400/80 shadow-[0_0_25px_rgba(0,0,0,0.5)] hover:shadow-[0_0_35px_rgba(34,211,238,0.45)] backdrop-blur-md transition-all duration-300 group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 active:scale-95"
+              className="inline-flex items-center gap-2.5 px-6 sm:px-7 py-3 sm:py-3.5 rounded-full bg-white/[0.08] hover:bg-white/[0.18] text-white font-semibold text-xs sm:text-sm md:text-base border border-white/25 hover:border-cyan-400/80 shadow-[0_0_25px_rgba(0,0,0,0.5)] hover:shadow-[0_0_35px_rgba(34,211,238,0.45)] backdrop-blur-md transition-all duration-300 group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 active:scale-95"
             >
               <span>Explore the globe</span>
               <ChevronRight className="w-4 h-4 text-cyan-400 group-hover:translate-x-1.5 transition-transform" />
@@ -210,7 +226,7 @@ export default function Home() {
       </section>
 
       {/* 3. Floating Search & Quick Weather Bar */}
-      <div className="relative z-30 -mt-10 sm:-mt-12 md:-mt-14 mb-20 sm:mb-28">
+      <div className="relative z-30 -mt-10 sm:-mt-12 md:-mt-14 mb-16 sm:mb-20">
         <HomeSearchBar
           currentLocation={currentLocation}
           weatherData={weatherData}
@@ -218,6 +234,13 @@ export default function Home() {
           onGetForecast={handleGetForecast}
         />
       </div>
+
+      {/* 4. Global Atmospheric Observatory Feature Section */}
+      <HomeFeatureSection
+        location={currentLocation}
+        weather={weatherData}
+        onExploreMore={() => handleGetForecast()}
+      />
 
       {/* 5. Interactive 3D Earth Explorer Modal */}
       {isExplorerOpen && (
@@ -229,7 +252,7 @@ export default function Home() {
           role="dialog"
           aria-modal="true"
           aria-label="Interactive 3D Earth Explorer"
-          className="fixed inset-0 z-50 bg-[#050B14] stars-bg flex flex-col justify-between p-4 sm:p-6 overflow-hidden"
+          className="fixed inset-0 z-50 bg-[#050B14] stars-bg flex flex-col justify-between p-2 sm:p-4 lg:p-6 overflow-y-auto lg:overflow-hidden max-h-screen"
         >
           {/* Top Bar with Navbar & Close Button */}
           <div className="relative w-full flex items-center justify-between max-w-7xl mx-auto z-30">
@@ -259,7 +282,7 @@ export default function Home() {
           </div>
 
           {/* Central 3D Globe with Real Earth Rendering, Inertia Drag & Zoom */}
-          <div className="relative z-20 flex-1 flex items-center justify-center my-2 w-full max-h-[62vh]">
+          <div className="relative z-20 flex-1 flex items-center justify-center my-2 w-full max-h-[50vh] sm:max-h-[62vh]">
             <GlobeScene
               selectedLocation={currentLocation}
               onSelectLocation={handleSelectLocation}
