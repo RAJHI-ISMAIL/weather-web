@@ -1,18 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Navbar } from "@/components/navigation/Navbar";
-import { HomeSearchBar } from "@/components/home/HomeSearchBar";
-import { HomeFeatureSection } from "@/components/home/HomeFeatureSection";
 import { GlobeScene } from "@/components/globe/GlobeScene";
 import { UseMyLocationButton } from "@/components/location/UseMyLocationButton";
 import { LocationSearch } from "@/components/location/LocationSearch";
 import { LocationData } from "@/types/location";
 import { WeatherData } from "@/types/weather";
 import { fetchWeatherData } from "@/lib/api/weather";
+import { reverseGeocode } from "@/lib/api/geocoding";
 import { useRouter } from "next/navigation";
-import { Globe, ChevronRight, X, Compass, Radio, Clock } from "lucide-react";
+import { Globe, ChevronRight, X, Compass, Radio, Clock, Loader2, Navigation, AlertCircle } from "lucide-react";
 import Shuffle from "@/components/ui/Shuffle";
 
 export default function Home() {
@@ -26,6 +25,8 @@ export default function Home() {
 
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [isExplorerOpen, setIsExplorerOpen] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
+  const [locateError, setLocateError] = useState<string | null>(null);
   const [utcTime, setUtcTime] = useState<string>("");
 
   // Live UTC Planetary Clock
@@ -37,6 +38,16 @@ export default function Home() {
     updateClock();
     const interval = setInterval(updateClock, 1000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Check URL query parameters to open 3D Explorer if requested
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("explore") === "true") {
+        setIsExplorerOpen(true);
+      }
+    }
   }, []);
 
   // Fetch real-time weather data for current location
@@ -65,10 +76,52 @@ export default function Home() {
 
   const handleGetForecast = (targetLoc?: LocationData) => {
     const loc = targetLoc || currentLocation;
+    setIsExplorerOpen(false);
     router.push(
       `/dashboard?lat=${loc.latitude}&lon=${loc.longitude}&city=${encodeURIComponent(
         loc.name
       )}&country=${encodeURIComponent(loc.country || "")}`
+    );
+  };
+
+  // 1. "Use My Location" handler: Trigger GPS, screen loading, reverse-geocode & navigate to forecast
+  const handleUseMyLocation = () => {
+    if (typeof window === "undefined" || !("geolocation" in navigator)) {
+      setLocateError("Geolocation is not supported by your browser.");
+      return;
+    }
+
+    setIsLocating(true);
+    setLocateError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const loc = await reverseGeocode(latitude, longitude);
+          setCurrentLocation(loc);
+          handleGetForecast(loc);
+        } catch {
+          const fallbackLoc: LocationData = {
+            name: `${latitude.toFixed(2)}°, ${longitude.toFixed(2)}°`,
+            latitude,
+            longitude,
+          };
+          setCurrentLocation(fallbackLoc);
+          handleGetForecast(fallbackLoc);
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      (error) => {
+        setIsLocating(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocateError("Location access was denied. Please enable location permissions in your browser or explore via 3D Climate.");
+        } else {
+          setLocateError("Unable to retrieve your location. Please check your network or try again.");
+        }
+      },
+      { timeout: 12000, enableHighAccuracy: true }
     );
   };
 
@@ -77,16 +130,15 @@ export default function Home() {
       
       {/* 1. Floating Pill Navigation */}
       <Navbar
+        activeTab={isExplorerOpen ? "Globe" : "Discover"}
         onTabChange={(tab) => {
           if (tab === "Discover") {
             setIsExplorerOpen(false);
             window.scrollTo({ top: 0, behavior: "smooth" });
-          }
-          if (tab === "Forecast") handleGetForecast();
-          if (tab === "Climate") {
-            setIsExplorerOpen(false);
-            const el = document.getElementById("feature-section");
-            el?.scrollIntoView({ behavior: "smooth" });
+          } else if (tab === "Forecast") {
+            handleGetForecast();
+          } else if (tab === "Globe") {
+            setIsExplorerOpen(true);
           }
         }}
         onSelectLocation={(loc) => handleGetForecast(loc)}
@@ -188,24 +240,63 @@ export default function Home() {
             Explore real-time conditions and forecasts across a living, rotating Earth in 4K resolution.
           </motion.p>
 
-          {/* Action Button & Telemetry Pills */}
+          {/* Dual Action Buttons: Use My Location & 3D Climate */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.45, ease: "easeOut" }}
-            className="pt-2 flex flex-wrap items-center gap-4"
+            className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto"
           >
+            {/* Button 1: Use My Location -> Screen Loading -> Forecast */}
+            <button
+              type="button"
+              onClick={handleUseMyLocation}
+              className="group relative flex items-center justify-between sm:justify-start gap-4 px-6 sm:px-7 py-4 rounded-2xl bg-white/[0.08] hover:bg-white/[0.16] border border-white/20 hover:border-cyan-400/80 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-[0_0_30px_rgba(34,211,238,0.35)] backdrop-blur-xl transition-all duration-300 text-left cursor-pointer active:scale-95"
+            >
+              <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-cyan-500/20 border border-cyan-400/40 text-cyan-400 group-hover:scale-110 group-hover:bg-cyan-500/30 transition-all duration-300 shadow-[0_0_15px_rgba(34,211,238,0.3)]">
+                <Navigation className="w-5 h-5 group-hover:rotate-45 transition-transform duration-300" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 font-semibold">
+                  GPS Telemetry
+                </span>
+                <span className="text-sm sm:text-base font-bold text-white group-hover:text-cyan-200 transition-colors">
+                  Use my location
+                </span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-cyan-300 group-hover:translate-x-1 transition-all ml-2" />
+            </button>
+
+            {/* Button 2: 3D Climate -> Opens 3D Earth Explorer with Search Bar & Manual 3D search */}
             <button
               type="button"
               onClick={() => setIsExplorerOpen(true)}
-              className="inline-flex items-center gap-2.5 px-6 sm:px-7 py-3 sm:py-3.5 rounded-full bg-white/[0.08] hover:bg-white/[0.18] text-white font-semibold text-xs sm:text-sm md:text-base border border-white/25 hover:border-cyan-400/80 shadow-[0_0_25px_rgba(0,0,0,0.5)] hover:shadow-[0_0_35px_rgba(34,211,238,0.45)] backdrop-blur-md transition-all duration-300 group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 active:scale-95"
+              className="group relative flex items-center justify-between sm:justify-start gap-4 px-6 sm:px-7 py-4 rounded-2xl bg-white/[0.08] hover:bg-white/[0.16] border border-white/20 hover:border-emerald-400/80 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-[0_0_30px_rgba(52,211,153,0.35)] backdrop-blur-xl transition-all duration-300 text-left cursor-pointer active:scale-95"
             >
-              <span>Explore the globe</span>
-              <ChevronRight className="w-4 h-4 text-cyan-400 group-hover:translate-x-1.5 transition-transform" />
+              <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-400 group-hover:scale-110 group-hover:bg-emerald-500/30 group-hover:rotate-12 transition-all duration-500 shadow-[0_0_15px_rgba(52,211,153,0.3)]">
+                <Globe className="w-5 h-5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-semibold">
+                  Atmospheric Observatory
+                </span>
+                <span className="text-sm sm:text-base font-bold text-white group-hover:text-emerald-200 transition-colors">
+                  3D Climate
+                </span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-300 group-hover:translate-x-1 transition-all ml-2" />
             </button>
+          </motion.div>
 
+          {/* Telemetry Pills */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.55, ease: "easeOut" }}
+            className="pt-2 flex flex-wrap items-center gap-3"
+          >
             {/* Target telemetry pill */}
-            <div className="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-black/40 border border-white/10 backdrop-blur-md text-xs text-slate-300">
+            <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-black/40 border border-white/10 backdrop-blur-md text-xs text-slate-300">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
               <span>Target: <strong className="text-white">{currentLocation.name}</strong></span>
               <span className="text-cyan-400 font-mono">
@@ -215,7 +306,7 @@ export default function Home() {
 
             {/* Planetary UTC Clock */}
             {utcTime && (
-              <div className="hidden md:inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-full bg-white/[0.04] border border-white/10 backdrop-blur-md text-xs font-mono text-slate-400">
+              <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/[0.04] border border-white/10 backdrop-blur-md text-xs font-mono text-slate-400">
                 <Clock className="w-3.5 h-3.5 text-cyan-400" />
                 <span>{utcTime}</span>
               </div>
@@ -225,24 +316,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3. Floating Search & Quick Weather Bar */}
-      <div className="relative z-30 -mt-10 sm:-mt-12 md:-mt-14 mb-16 sm:mb-20">
-        <HomeSearchBar
-          currentLocation={currentLocation}
-          weatherData={weatherData}
-          onSelectLocation={handleSelectLocation}
-          onGetForecast={handleGetForecast}
-        />
-      </div>
 
-      {/* 4. Global Atmospheric Observatory Feature Section */}
-      <HomeFeatureSection
-        location={currentLocation}
-        weather={weatherData}
-        onExploreMore={() => handleGetForecast()}
-      />
-
-      {/* 5. Interactive 3D Earth Explorer Modal */}
+      {/* 5. Interactive 3D Earth & Climate Explorer Modal */}
       {isExplorerOpen && (
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
@@ -251,7 +326,7 @@ export default function Home() {
           transition={{ duration: 0.3 }}
           role="dialog"
           aria-modal="true"
-          aria-label="Interactive 3D Earth Explorer"
+          aria-label="3D Climate Explorer"
           className="fixed inset-0 z-50 bg-[#050B14] stars-bg flex flex-col justify-between p-2 sm:p-4 lg:p-6 overflow-y-auto lg:overflow-hidden max-h-screen"
         >
           {/* Top Bar with Navbar & Close Button */}
@@ -260,9 +335,14 @@ export default function Home() {
               <div className="flex items-center justify-center w-8 h-8 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-400">
                 <Globe className="w-4 h-4" />
               </div>
-              <span className="font-bold text-sm tracking-[0.18em] text-white uppercase">
-                TEMPORA EXPLORER
-              </span>
+              <div>
+                <span className="font-bold text-sm tracking-[0.18em] text-white uppercase block">
+                  TEMPORA 3D CLIMATE EXPLORER
+                </span>
+                <span className="text-[10px] font-mono text-cyan-400 hidden sm:block">
+                  Live Global Atmospheric Grid · Real-time Rendering
+                </span>
+              </div>
             </div>
 
             {/* Close Explorer Button */}
@@ -276,9 +356,14 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Centered Search Bar */}
+          {/* Centered Search Bar in 3D Climate */}
           <div className="relative z-30 w-full max-w-xl mx-auto my-2">
-            <LocationSearch onSelectLocation={handleSelectLocation} />
+            <LocationSearch
+              onSelectLocation={(loc) => {
+                handleSelectLocation(loc);
+              }}
+              placeholder="Search city or location in 3D Earth..."
+            />
           </div>
 
           {/* Central 3D Globe with Real Earth Rendering, Inertia Drag & Zoom */}
@@ -298,7 +383,7 @@ export default function Home() {
 
               <button
                 type="button"
-                onClick={() => handleGetForecast()}
+                onClick={() => handleGetForecast(currentLocation)}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-cyan-500/20 hover:bg-cyan-500/35 text-cyan-300 font-semibold text-xs sm:text-sm border border-cyan-400/50 shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all cursor-pointer hover:scale-105 active:scale-95"
               >
                 <span>View {currentLocation.name} Forecast</span>
@@ -307,15 +392,100 @@ export default function Home() {
             </div>
 
             <p className="text-xs sm:text-sm text-slate-400 font-medium tracking-wide flex items-center gap-2 text-center">
-              <span>Drag to rotate Earth</span>
+              <span>Search city above or drag to rotate Earth</span>
               <span className="text-cyan-400">•</span>
               <span>Pinch or scroll to zoom</span>
               <span className="text-cyan-400">•</span>
-              <span>Smooth auto-orient on search</span>
+              <span>Click markers to view forecast</span>
             </p>
           </div>
         </motion.div>
       )}
+
+      {/* Full-Screen Atmospheric Telemetry Geolocation Loading Screen */}
+      <AnimatePresence>
+        {isLocating && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-[#040812]/92 backdrop-blur-2xl text-center"
+          >
+            {/* Ambient atmospheric glow */}
+            <div className="absolute w-[450px] h-[450px] rounded-full bg-cyan-500/15 blur-[120px] pointer-events-none -z-10" />
+
+            <div className="relative flex flex-col items-center max-w-md mx-auto space-y-6">
+              {/* Radar pulse radar ring */}
+              <div className="relative w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center">
+                <span className="absolute inset-0 rounded-full border border-cyan-400/30 animate-ping" />
+                <span className="absolute inset-3 rounded-full border border-cyan-400/50 animate-pulse" />
+                <span className="absolute inset-0 rounded-full bg-gradient-to-tr from-cyan-500/20 to-blue-500/10 blur-md" />
+                
+                {/* Center Satellite / Navigation Icon */}
+                <div className="relative z-10 flex items-center justify-center w-16 h-16 rounded-full bg-[#071324] border-2 border-cyan-400 shadow-[0_0_30px_rgba(34,211,238,0.6)]">
+                  <Navigation className="w-8 h-8 text-cyan-400 animate-pulse" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-400/30 text-cyan-400 text-xs font-mono uppercase tracking-widest">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>GPS Triangulation Active</span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                  Detecting Your Location
+                </h3>
+                <p className="text-sm text-slate-300 font-normal leading-relaxed max-w-sm">
+                  Connecting to atmospheric satellite network to retrieve your real-time local forecast...
+                </p>
+              </div>
+
+              {/* Progress bar simulation */}
+              <div className="w-64 h-1.5 rounded-full bg-white/10 overflow-hidden relative">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-cyan-400 via-teal-400 to-blue-500 rounded-full"
+                  initial={{ width: "10%" }}
+                  animate={{ width: "95%" }}
+                  transition={{ duration: 4, ease: "easeInOut" }}
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsLocating(false)}
+                className="text-xs text-slate-400 hover:text-white underline underline-offset-4 transition-colors pt-2 cursor-pointer"
+              >
+                Cancel and return
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Geolocation Error Alert Notification */}
+      <AnimatePresence>
+        {locateError && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-20 z-50 max-w-lg mx-auto inset-x-4 p-4 rounded-2xl bg-rose-950/90 border border-rose-500/40 text-white shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3 text-xs"
+          >
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+              <span>{locateError}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setLocateError(null)}
+              className="p-1 hover:bg-white/10 rounded-full text-slate-300 hover:text-white shrink-0 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 6. Footer */}
       <footer className="relative z-10 w-full py-8 px-4 bg-[#050B14] border-t border-white/10 text-slate-400 text-xs">

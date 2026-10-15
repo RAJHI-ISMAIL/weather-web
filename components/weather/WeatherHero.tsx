@@ -40,13 +40,13 @@ export function WeatherHero({ weather, theme, onChangeLocationClick }: WeatherHe
         </div>
 
         <h1 className={`text-4xl sm:text-5xl md:text-6xl font-serif font-bold leading-[1.1] tracking-tight ${theme.heroTitleColor}`}>
-          {theme.id === "heatwave" ? "Prepare for Extreme Temperatures" : "Discover the Weather Around You"}
+          {city}{country ? `, ${country}` : ""}
         </h1>
 
         <p className={`text-sm sm:text-base font-normal leading-relaxed ${theme.heroSubtextColor}`}>
           {theme.id === "heatwave"
             ? "Essential Heatwave Safety & Forecast."
-            : "Accurate forecasts, beautiful insights, and a clearer view of what's ahead."}
+            : `${current.condition} with real-time temperature of ${current.temperature}°C, high of ${current.high}° and low of ${current.low}°.`}
         </p>
       </div>
 

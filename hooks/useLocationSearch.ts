@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { LocationData } from "@/types/location";
 import { searchLocations } from "@/lib/api/geocoding";
 
@@ -40,6 +40,12 @@ export function useLocationSearch(debounceMs = 300) {
     };
   }, [query, debounceMs]);
 
+  const clearSearch = useCallback(() => {
+    setQuery("");
+    setResults([]);
+    setIsOpen(false);
+  }, []);
+
   return {
     query,
     setQuery,
@@ -47,10 +53,6 @@ export function useLocationSearch(debounceMs = 300) {
     loading,
     isOpen,
     setIsOpen,
-    clearSearch: () => {
-      setQuery("");
-      setResults([]);
-      setIsOpen(false);
-    },
+    clearSearch,
   };
 }

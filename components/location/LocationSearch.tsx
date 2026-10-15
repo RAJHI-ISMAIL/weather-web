@@ -11,6 +11,7 @@ interface LocationSearchProps {
   placeholder?: string;
   className?: string;
   theme?: ThemeTokens;
+  autoFocus?: boolean;
 }
 
 export function LocationSearch({
@@ -18,6 +19,7 @@ export function LocationSearch({
   placeholder = "Search for a city, place or location...",
   className = "",
   theme,
+  autoFocus = false,
 }: LocationSearchProps) {
   const { query, setQuery, results, loading, isOpen, setIsOpen, clearSearch } = useLocationSearch();
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
@@ -44,9 +46,12 @@ export function LocationSearch({
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setSelectedIndex((prev) => (prev > 0 ? prev - 1 : results.length - 1));
-    } else if (e.key === "Enter" && selectedIndex >= 0) {
+    } else if (e.key === "Enter") {
       e.preventDefault();
-      handleSelect(results[selectedIndex]);
+      const target = selectedIndex >= 0 ? results[selectedIndex] : results[0];
+      if (target) {
+        handleSelect(target);
+      }
     } else if (e.key === "Escape") {
       setIsOpen(false);
     }
@@ -96,6 +101,7 @@ export function LocationSearch({
           ref={inputRef}
           type="text"
           value={query}
+          autoFocus={autoFocus}
           onChange={(e) => {
             setQuery(e.target.value);
             setSelectedIndex(-1);
