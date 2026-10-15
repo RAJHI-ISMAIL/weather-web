@@ -90,11 +90,11 @@
   top: 0;
   width: 100%;
   overflow: hidden;
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65), 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.08);
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
   border-radius: var(--cc-radius);
-  background: #0A1628;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  background: linear-gradient(160deg, #0d1d35 0%, #0A1628 60%, #07101e 100%);
+  transition: border-color 0.35s ease, box-shadow 0.35s ease;
 }
 
 .circular-carousel__photo {
@@ -135,26 +135,28 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 16px;
+  padding: 0;
   background: linear-gradient(
     180deg,
-    rgba(5, 11, 20, 0.72) 0%,
-    rgba(5, 11, 20, 0.25) 45%,
-    rgba(5, 11, 20, 0.88) 100%
+    rgba(4, 9, 18, 0.82) 0%,
+    rgba(4, 9, 18, 0.18) 35%,
+    rgba(4, 9, 18, 0.18) 55%,
+    rgba(4, 9, 18, 0.92) 100%
   );
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(0px);
   color: #ffffff;
   pointer-events: none;
   z-index: 5;
-  transition: background 0.3s ease;
+  transition: background 0.35s ease;
 }
 
 .circular-carousel__card-overlay--active {
   background: linear-gradient(
     180deg,
-    rgba(14, 165, 233, 0.4) 0%,
-    rgba(5, 11, 20, 0.2) 45%,
-    rgba(5, 11, 20, 0.92) 100%
+    rgba(8, 145, 178, 0.55) 0%,
+    rgba(4, 9, 18, 0.1) 30%,
+    rgba(4, 9, 18, 0.1) 55%,
+    rgba(4, 9, 18, 0.95) 100%
   );
 }
 
