@@ -11,11 +11,289 @@ import { WeatherData } from "@/types/weather";
 import { fetchWeatherData } from "@/lib/api/weather";
 import { reverseGeocode } from "@/lib/api/geocoding";
 import { useRouter } from "next/navigation";
-import { Globe, ChevronRight, X, Compass, Radio, Clock, Loader2, Navigation, AlertCircle } from "lucide-react";
+import {
+  Globe,
+  ChevronRight,
+  X,
+  Compass,
+  Radio,
+  Clock,
+  Loader2,
+  Navigation,
+  MapPin,
+  CheckCircle2,
+} from "lucide-react";
 import Shuffle from "@/components/ui/Shuffle";
+import SpecularButton from "@/components/ui/SpecularButton";
 
+// ─── GPS Permission Modal ─────────────────────────────────────────────────────
+function GpsPermissionModal({ onRequest, onCancel }: { onRequest: () => void; onCancel: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      className="fixed inset-0 z-[60] flex items-center justify-center p-6"
+      style={{ background: "rgba(4,8,18,0.88)", backdropFilter: "blur(20px)" }}
+    >
+      <div
+        className="absolute w-[420px] h-[420px] rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(circle, rgba(34,211,238,0.18) 0%, transparent 70%)" }}
+      />
+
+      <motion.div
+        initial={{ scale: 0.88, y: 24 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.88, y: 24 }}
+        transition={{ type: "spring", stiffness: 300, damping: 26 }}
+        className="relative max-w-md w-full flex flex-col items-center text-center gap-6 rounded-3xl p-8 sm:p-10"
+        style={{
+          background: "linear-gradient(160deg, rgba(13,22,40,0.98) 0%, rgba(7,14,28,0.98) 100%)",
+          border: "1.5px solid rgba(34,211,238,0.25)",
+          boxShadow:
+            "0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)",
+        }}
+      >
+        <div className="relative">
+          <div
+            className="absolute inset-0 rounded-full animate-ping opacity-30"
+            style={{ background: "rgba(34,211,238,0.4)", transform: "scale(1.3)" }}
+          />
+          <div
+            className="relative flex items-center justify-center w-20 h-20 rounded-full"
+            style={{
+              background: "linear-gradient(135deg, rgba(34,211,238,0.2), rgba(56,189,248,0.1))",
+              border: "2px solid rgba(34,211,238,0.5)",
+              boxShadow: "0 0 40px rgba(34,211,238,0.35)",
+            }}
+          >
+            <MapPin className="w-9 h-9 text-cyan-400" />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <h2 className="text-2xl font-extrabold text-white tracking-tight">
+            Enable GPS to continue
+          </h2>
+          <p className="text-slate-300 text-sm leading-relaxed max-w-xs mx-auto">
+            We need access to your location to pull your real-time local forecast.
+            Click{" "}
+            <strong className="text-cyan-300">Allow</strong>{" "}
+            when your browser asks.
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 w-full">
+          <button
+            type="button"
+            onClick={onRequest}
+            className="flex-1 flex items-center justify-center gap-2.5 py-3.5 px-6 rounded-2xl font-bold text-sm text-white transition-all duration-200 cursor-pointer hover:brightness-110 active:scale-95"
+            style={{
+              background: "linear-gradient(135deg, #06b6d4, #0284c7)",
+              boxShadow: "0 0 30px rgba(6,182,212,0.45)",
+            }}
+          >
+            <Navigation className="w-4 h-4" />
+            Activate GPS
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 py-3.5 px-6 rounded-2xl font-semibold text-sm text-slate-300 hover:text-white transition-all duration-200 cursor-pointer hover:bg-white/10"
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.12)",
+            }}
+          >
+            Not now
+          </button>
+        </div>
+
+        <p className="text-[11px] text-slate-500 leading-tight">
+          Your location is only used for weather data and is never stored.
+        </p>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ─── GPS Locating Screen ──────────────────────────────────────────────────────
+function GpsLocatingScreen({ onCancel }: { onCancel: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+      className="fixed inset-0 z-[60] flex flex-col items-center justify-center p-6 text-center"
+      style={{ background: "rgba(4,8,18,0.92)", backdropFilter: "blur(24px)" }}
+    >
+      <div
+        className="absolute w-[450px] h-[450px] rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(circle, rgba(34,211,238,0.15) 0%, transparent 70%)" }}
+      />
+      <div className="relative flex flex-col items-center max-w-sm mx-auto space-y-7">
+        <div className="relative w-32 h-32 flex items-center justify-center">
+          <span className="absolute inset-0 rounded-full border border-cyan-400/25 animate-ping" />
+          <span className="absolute inset-4 rounded-full border border-cyan-400/40 animate-pulse" />
+          <span
+            className="absolute inset-0 rounded-full blur-xl"
+            style={{ background: "rgba(34,211,238,0.15)" }}
+          />
+          <div
+            className="relative z-10 flex items-center justify-center w-16 h-16 rounded-full"
+            style={{
+              background: "#071324",
+              border: "2px solid #22d3ee",
+              boxShadow: "0 0 30px rgba(34,211,238,0.6)",
+            }}
+          >
+            <Navigation className="w-8 h-8 text-cyan-400 animate-pulse" />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <div
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono uppercase tracking-widest"
+            style={{
+              background: "rgba(34,211,238,0.1)",
+              border: "1px solid rgba(34,211,238,0.3)",
+              color: "#22d3ee",
+            }}
+          >
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            GPS Triangulation Active
+          </div>
+          <h3 className="text-2xl font-bold text-white tracking-tight">
+            Locking onto your location…
+          </h3>
+          <p className="text-sm text-slate-300 leading-relaxed max-w-xs mx-auto">
+            Connecting to satellite network to retrieve your real-time local forecast.
+          </p>
+        </div>
+
+        <div
+          className="w-64 h-1.5 rounded-full overflow-hidden"
+          style={{ background: "rgba(255,255,255,0.1)" }}
+        >
+          <motion.div
+            className="h-full rounded-full"
+            initial={{ width: "8%" }}
+            animate={{ width: "92%" }}
+            transition={{ duration: 5, ease: "easeInOut" }}
+            style={{ background: "linear-gradient(90deg, #22d3ee, #38bdf8, #6366f1)" }}
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={onCancel}
+          className="text-xs text-slate-400 hover:text-white underline underline-offset-4 transition-colors cursor-pointer"
+        >
+          Cancel and return
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── GPS Success Popup ────────────────────────────────────────────────────────
+function GpsSuccessPopup({ cityName }: { cityName: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+      className="fixed inset-0 z-[70] flex items-center justify-center p-6"
+      style={{ background: "rgba(4,8,18,0.85)", backdropFilter: "blur(20px)" }}
+    >
+      <div
+        className="absolute w-[380px] h-[380px] rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(circle, rgba(52,211,153,0.22) 0%, transparent 70%)" }}
+      />
+
+      <motion.div
+        initial={{ scale: 0.75, y: 30 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.75, y: 30, opacity: 0 }}
+        transition={{ type: "spring", stiffness: 260, damping: 22 }}
+        className="relative max-w-sm w-full flex flex-col items-center text-center gap-5 rounded-3xl p-10"
+        style={{
+          background: "linear-gradient(160deg, rgba(5,30,20,0.98) 0%, rgba(5,20,15,0.98) 100%)",
+          border: "1.5px solid rgba(52,211,153,0.35)",
+          boxShadow:
+            "0 40px 100px rgba(0,0,0,0.7), 0 0 60px rgba(52,211,153,0.15), inset 0 1px 0 rgba(255,255,255,0.06)",
+        }}
+      >
+        <motion.div
+          initial={{ scale: 0, rotate: -20 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: "spring", stiffness: 300, damping: 18, delay: 0.15 }}
+          className="text-7xl select-none"
+          role="img"
+          aria-label="Smiling face"
+        >
+          😊
+        </motion.div>
+
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.3, type: "spring", stiffness: 280, damping: 20 }}
+        >
+          <CheckCircle2
+            className="w-10 h-10 text-emerald-400"
+            style={{ filter: "drop-shadow(0 0 12px rgba(52,211,153,0.7))" }}
+          />
+        </motion.div>
+
+        <div className="space-y-1.5">
+          <motion.h2
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="text-2xl font-extrabold text-white tracking-tight"
+          >
+            Location found! 🎉
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+            className="text-slate-300 text-sm leading-relaxed"
+          >
+            You&apos;re in <strong className="text-emerald-300">{cityName}</strong>.
+            <br />
+            Now you can continue — taking you to your forecast!
+          </motion.p>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="flex items-center gap-1.5"
+        >
+          {[0, 1, 2].map((i) => (
+            <motion.span
+              key={i}
+              className="w-2 h-2 rounded-full bg-emerald-400"
+              animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.1, 0.8] }}
+              transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+            />
+          ))}
+        </motion.div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Home() {
   const router = useRouter();
+
   const [currentLocation, setCurrentLocation] = useState<LocationData>({
     name: "Zhengzhou",
     country: "China",
@@ -25,110 +303,119 @@ export default function Home() {
 
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [isExplorerOpen, setIsExplorerOpen] = useState(false);
-  const [isLocating, setIsLocating] = useState(false);
-  const [locateError, setLocateError] = useState<string | null>(null);
+
+  // GPS state machine: idle | permission | locating | success | error
+  const [gpsState, setGpsState] = useState<"idle" | "permission" | "locating" | "success" | "error">("idle");
+  const [gpsError, setGpsError] = useState<string | null>(null);
+  const [foundLocation, setFoundLocation] = useState<LocationData | null>(null);
+
   const [utcTime, setUtcTime] = useState<string>("");
 
-  // Live UTC Planetary Clock
   useEffect(() => {
-    function updateClock() {
+    function tick() {
       const now = new Date();
       setUtcTime(now.toUTCString().slice(17, 25) + " UTC");
     }
-    updateClock();
-    const interval = setInterval(updateClock, 1000);
-    return () => clearInterval(interval);
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
   }, []);
 
-  // Check URL query parameters to open 3D Explorer if requested
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
-      if (params.get("explore") === "true") {
-        setIsExplorerOpen(true);
-      }
+      if (params.get("explore") === "true") setIsExplorerOpen(true);
     }
   }, []);
 
-  // Fetch real-time weather data for current location
   useEffect(() => {
-    let isMounted = true;
-    async function loadWeather() {
+    let alive = true;
+    async function load() {
       const data = await fetchWeatherData(
         currentLocation.latitude,
         currentLocation.longitude,
         currentLocation.name,
         currentLocation.country
       );
-      if (isMounted && data) {
-        setWeatherData(data);
-      }
+      if (alive && data) setWeatherData(data);
     }
-    loadWeather();
-    return () => {
-      isMounted = false;
-    };
+    load();
+    return () => { alive = false; };
   }, [currentLocation]);
 
-  const handleSelectLocation = (loc: LocationData) => {
-    setCurrentLocation(loc);
-  };
+  const handleSelectLocation = (loc: LocationData) => setCurrentLocation(loc);
 
-  const handleGetForecast = (targetLoc?: LocationData) => {
-    const loc = targetLoc || currentLocation;
+  const navigateToForecast = (loc: LocationData) => {
     setIsExplorerOpen(false);
     router.push(
-      `/dashboard?lat=${loc.latitude}&lon=${loc.longitude}&city=${encodeURIComponent(
-        loc.name
-      )}&country=${encodeURIComponent(loc.country || "")}`
+      `/dashboard?lat=${loc.latitude}&lon=${loc.longitude}&city=${encodeURIComponent(loc.name)}&country=${encodeURIComponent(loc.country || "")}`
     );
   };
 
-  // 1. "Use My Location" handler: Trigger GPS, screen loading, reverse-geocode & navigate to forecast
+  const handleGetForecast = (targetLoc?: LocationData) => {
+    navigateToForecast(targetLoc || currentLocation);
+  };
+
+  // Step 1: show GPS permission modal
   const handleUseMyLocation = () => {
     if (typeof window === "undefined" || !("geolocation" in navigator)) {
-      setLocateError("Geolocation is not supported by your browser.");
+      setGpsError("Geolocation is not supported by your browser.");
+      setGpsState("error");
       return;
     }
+    setGpsState("permission");
+  };
 
-    setIsLocating(true);
-    setLocateError(null);
-
+  // Step 2: user clicked Activate GPS
+  const handleActivateGps = () => {
+    setGpsState("locating");
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
         try {
           const loc = await reverseGeocode(latitude, longitude);
+          setFoundLocation(loc);
           setCurrentLocation(loc);
-          handleGetForecast(loc);
+          setGpsState("success");
+          setTimeout(() => navigateToForecast(loc), 2700);
         } catch {
-          const fallbackLoc: LocationData = {
+          const fallback: LocationData = {
             name: `${latitude.toFixed(2)}°, ${longitude.toFixed(2)}°`,
             latitude,
             longitude,
           };
-          setCurrentLocation(fallbackLoc);
-          handleGetForecast(fallbackLoc);
-        } finally {
-          setIsLocating(false);
+          setFoundLocation(fallback);
+          setCurrentLocation(fallback);
+          setGpsState("success");
+          setTimeout(() => navigateToForecast(fallback), 2700);
         }
       },
-      (error) => {
-        setIsLocating(false);
-        if (error.code === error.PERMISSION_DENIED) {
-          setLocateError("Location access was denied. Please enable location permissions in your browser or explore via 3D Climate.");
+      (err) => {
+        setGpsState("error");
+        if (err.code === err.PERMISSION_DENIED) {
+          setGpsError(
+            "GPS access was denied. Please enable location permissions in your browser settings, then try again."
+          );
         } else {
-          setLocateError("Unable to retrieve your location. Please check your network or try again.");
+          setGpsError("Unable to get your location. Check your network and try again.");
         }
       },
-      { timeout: 12000, enableHighAccuracy: true }
+      { timeout: 14000, enableHighAccuracy: true }
     );
   };
 
+  const resetGps = () => {
+    setGpsState("idle");
+    setGpsError(null);
+    setFoundLocation(null);
+  };
+
+  // Suppress unused warning
+  void weatherData;
+
   return (
     <div className="relative min-h-screen bg-[#050B14] text-[#F8FAFC] overflow-x-hidden flex flex-col font-sans selection:bg-cyan-500/30">
-      
-      {/* 1. Floating Pill Navigation */}
+
       <Navbar
         activeTab={isExplorerOpen ? "Globe" : "Discover"}
         onTabChange={(tab) => {
@@ -144,52 +431,45 @@ export default function Home() {
         onSelectLocation={(loc) => handleGetForecast(loc)}
       />
 
-      {/* 2. Hero Section with 4K Earth Video Background & Text Animations */}
+      {/* Hero */}
       <section className="relative z-10 w-full min-h-[85vh] lg:min-h-[92vh] flex flex-col justify-center pt-24 pb-16 px-4 sm:pt-28 sm:pb-20 sm:px-6 lg:px-12 overflow-hidden">
-        
-        {/* Full-bleed 4K Planet Earth Background Video */}
+
+        {/* Background Video */}
         <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none -z-10">
           <video
-            src="/earth-spin.mp4"
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full h-full object-cover object-center lg:object-[65%_center] scale-105 hidden lg:block"
+            src="/background-vd.mp4"
+            autoPlay loop muted playsInline
+            className="w-full h-full object-cover object-center scale-105 hidden lg:block"
           />
           <video
-            src="/earth-spin.mp4"
-            autoPlay
-            loop
-            muted
-            playsInline
+            src="/background-vd.mp4"
+            autoPlay loop muted playsInline
             className="w-full h-full object-cover object-center scale-105 lg:hidden"
           />
-
-          {/* Cinematic Vignettes & Contrast Overlays */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#050B14] via-[#050B14]/75 to-transparent lg:w-3/4" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#050B14] via-transparent to-[#050B14]/85" />
-          <div className="absolute inset-0 bg-[#050B14]/25" />
-
-          {/* Atmospheric Cyan Rim Light */}
-          <div className="absolute top-1/4 right-1/4 w-[520px] h-[520px] bg-cyan-500/15 rounded-full blur-[140px] pointer-events-none hidden lg:block" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#050B14] via-[#050B14]/80 to-transparent lg:w-3/4" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#050B14] via-transparent to-[#050B14]/75" />
+          <div className="absolute inset-0 bg-[#050B14]/20" />
+          <div className="absolute top-1/4 right-1/4 w-[520px] h-[520px] rounded-full blur-[140px] pointer-events-none hidden lg:block"
+            style={{ background: "rgba(34,211,238,0.1)" }} />
         </div>
 
-        {/* Hero Content Container */}
         <div className="max-w-7xl mx-auto w-full flex flex-col justify-center items-start z-10 space-y-6">
-          
-          {/* Live Orbit Badge with Animation */}
+
           <motion.div
             initial={{ opacity: 0, y: -15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/[0.06] border border-white/15 text-cyan-400 text-xs font-semibold tracking-wider uppercase backdrop-blur-md shadow-[0_0_25px_rgba(34,211,238,0.25)]"
+            className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-cyan-400 text-xs font-semibold tracking-wider uppercase backdrop-blur-md"
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.15)",
+              boxShadow: "0 0 25px rgba(34,211,238,0.25)",
+            }}
           >
             <Radio className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
-            <span>LIVE WEATHER · 4K GLOBAL VIEW</span>
+            <span>LIVE WEATHER · GLOBAL ATMOSPHERIC VIEW</span>
           </motion.div>
 
-          {/* Main Headline with Stagger & Shimmer */}
           <motion.div
             initial={{ opacity: 0, y: 25 }}
             animate={{ opacity: 1, y: 0 }}
@@ -197,298 +477,212 @@ export default function Home() {
             className="space-y-1"
           >
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-white font-serif leading-[1.05] max-w-3xl drop-shadow-[0_4px_30px_rgba(0,0,0,0.8)]">
-              <Shuffle
-                text="Feel the world"
-                tag="span"
-                className="block"
-                shuffleDirection="right"
-                duration={0.4}
-                animationMode="evenodd"
-                shuffleTimes={2}
-                ease="power3.out"
-                stagger={0.03}
-                threshold={0.1}
-                triggerOnce={true}
-                triggerOnHover={true}
-                textAlign="left"
-              />
-              <Shuffle
-                text="around you."
-                tag="span"
-                className="block text-shimmer italic font-serif"
-                shuffleDirection="right"
-                duration={0.4}
-                animationMode="evenodd"
-                shuffleTimes={2}
-                ease="power3.out"
-                stagger={0.03}
-                threshold={0.1}
-                triggerOnce={true}
-                triggerOnHover={true}
-                textAlign="left"
-              />
+              <Shuffle text="Feel the world" tag="span" className="block"
+                shuffleDirection="right" duration={0.4} animationMode="evenodd"
+                shuffleTimes={2} ease="power3.out" stagger={0.03}
+                threshold={0.1} triggerOnce={true} triggerOnHover={true} textAlign="left" />
+              <Shuffle text="around you." tag="span" className="block text-shimmer italic font-serif"
+                shuffleDirection="right" duration={0.4} animationMode="evenodd"
+                shuffleTimes={2} ease="power3.out" stagger={0.03}
+                threshold={0.1} triggerOnce={true} triggerOnHover={true} textAlign="left" />
             </h1>
           </motion.div>
 
-          {/* Subtitle with Soft Fade */}
           <motion.p
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
             className="text-base sm:text-lg md:text-xl text-slate-200 font-normal max-w-xl leading-relaxed drop-shadow-md"
           >
-            Explore real-time conditions and forecasts across a living, rotating Earth in 4K resolution.
+            Explore real-time conditions and 7-day forecasts across a living, rotating Earth.
           </motion.p>
 
-          {/* Dual Action Buttons: Use My Location & 3D Climate */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.45, ease: "easeOut" }}
-            className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto"
+            className="pt-2 flex flex-col sm:flex-row items-center gap-4"
           >
-            {/* Button 1: Use My Location -> Screen Loading -> Forecast */}
-            <button
-              type="button"
+            {/* Button 1: Use My Location — cyan specular */}
+            <SpecularButton
+              size="lg"
+              radius={20}
+              tint="#050B14"
+              tintOpacity={0.85}
+              blur={14}
+              textColor="#e0f2fe"
+              lineColor="#67e8f9"
+              baseColor="#164e63"
+              intensity={1.4}
+              idleIntensity={0.55}
+              shineSize={14}
+              shineFade={42}
+              thickness={1.5}
+              glow={1.3}
+              followMouse
+              proximity={280}
               onClick={handleUseMyLocation}
-              className="group relative flex items-center justify-between sm:justify-start gap-4 px-6 sm:px-7 py-4 rounded-2xl bg-white/[0.08] hover:bg-white/[0.16] border border-white/20 hover:border-cyan-400/80 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-[0_0_30px_rgba(34,211,238,0.35)] backdrop-blur-xl transition-all duration-300 text-left cursor-pointer active:scale-95"
+              className="min-w-[220px]"
             >
-              <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-cyan-500/20 border border-cyan-400/40 text-cyan-400 group-hover:scale-110 group-hover:bg-cyan-500/30 transition-all duration-300 shadow-[0_0_15px_rgba(34,211,238,0.3)]">
-                <Navigation className="w-5 h-5 group-hover:rotate-45 transition-transform duration-300" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 font-semibold">
-                  GPS Telemetry
-                </span>
-                <span className="text-sm sm:text-base font-bold text-white group-hover:text-cyan-200 transition-colors">
-                  Use my location
-                </span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-cyan-300 group-hover:translate-x-1 transition-all ml-2" />
-            </button>
+              <Navigation className="w-5 h-5 shrink-0" />
+              <span className="flex flex-col items-start">
+                <span className="text-[10px] font-mono uppercase tracking-wider opacity-70">GPS Telemetry</span>
+                <span className="text-base font-bold leading-tight">Use my location</span>
+              </span>
+              <ChevronRight className="w-4 h-4 opacity-60 ml-1" />
+            </SpecularButton>
 
-            {/* Button 2: 3D Climate -> Opens 3D Earth Explorer with Search Bar & Manual 3D search */}
-            <button
-              type="button"
+            {/* Button 2: 3D Climate — emerald specular */}
+            <SpecularButton
+              size="lg"
+              radius={20}
+              tint="#050B14"
+              tintOpacity={0.85}
+              blur={14}
+              textColor="#d1fae5"
+              lineColor="#6ee7b7"
+              baseColor="#064e3b"
+              intensity={1.4}
+              idleIntensity={0.55}
+              shineSize={14}
+              shineFade={42}
+              thickness={1.5}
+              glow={1.3}
+              followMouse
+              proximity={280}
               onClick={() => setIsExplorerOpen(true)}
-              className="group relative flex items-center justify-between sm:justify-start gap-4 px-6 sm:px-7 py-4 rounded-2xl bg-white/[0.08] hover:bg-white/[0.16] border border-white/20 hover:border-emerald-400/80 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-[0_0_30px_rgba(52,211,153,0.35)] backdrop-blur-xl transition-all duration-300 text-left cursor-pointer active:scale-95"
+              className="min-w-[220px]"
             >
-              <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-400 group-hover:scale-110 group-hover:bg-emerald-500/30 group-hover:rotate-12 transition-all duration-500 shadow-[0_0_15px_rgba(52,211,153,0.3)]">
-                <Globe className="w-5 h-5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-semibold">
-                  Atmospheric Observatory
-                </span>
-                <span className="text-sm sm:text-base font-bold text-white group-hover:text-emerald-200 transition-colors">
-                  3D Climate
-                </span>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-300 group-hover:translate-x-1 transition-all ml-2" />
-            </button>
+              <Globe className="w-5 h-5 shrink-0" />
+              <span className="flex flex-col items-start">
+                <span className="text-[10px] font-mono uppercase tracking-wider opacity-70">Atmospheric Observatory</span>
+                <span className="text-base font-bold leading-tight">3D Climate</span>
+              </span>
+              <ChevronRight className="w-4 h-4 opacity-60 ml-1" />
+            </SpecularButton>
           </motion.div>
 
-          {/* Telemetry Pills */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.55, ease: "easeOut" }}
             className="pt-2 flex flex-wrap items-center gap-3"
           >
-            {/* Target telemetry pill */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-black/40 border border-white/10 backdrop-blur-md text-xs text-slate-300">
+            <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-xs text-slate-300 backdrop-blur-md"
+              style={{ background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.1)" }}>
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
               <span>Target: <strong className="text-white">{currentLocation.name}</strong></span>
-              <span className="text-cyan-400 font-mono">
-                ({currentLocation.latitude.toFixed(1)}°, {currentLocation.longitude.toFixed(1)}°)
-              </span>
+              <span className="text-cyan-400 font-mono">({currentLocation.latitude.toFixed(1)}°, {currentLocation.longitude.toFixed(1)}°)</span>
             </div>
-
-            {/* Planetary UTC Clock */}
             {utcTime && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/[0.04] border border-white/10 backdrop-blur-md text-xs font-mono text-slate-400">
+              <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-mono text-slate-400 backdrop-blur-md"
+                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)" }}>
                 <Clock className="w-3.5 h-3.5 text-cyan-400" />
                 <span>{utcTime}</span>
               </div>
             )}
           </motion.div>
-
         </div>
       </section>
 
-
-      {/* 5. Interactive 3D Earth & Climate Explorer Modal */}
+      {/* 3D Explorer Modal */}
       {isExplorerOpen && (
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.98 }}
           transition={{ duration: 0.3 }}
-          role="dialog"
-          aria-modal="true"
-          aria-label="3D Climate Explorer"
+          role="dialog" aria-modal="true" aria-label="3D Climate Explorer"
           className="fixed inset-0 z-50 bg-[#050B14] stars-bg flex flex-col justify-between p-2 sm:p-4 lg:p-6 overflow-y-auto lg:overflow-hidden max-h-screen"
         >
-          {/* Top Bar with Navbar & Close Button */}
           <div className="relative w-full flex items-center justify-between max-w-7xl mx-auto z-30">
             <div className="flex items-center gap-2.5">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-400">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full"
+                style={{ background: "rgba(34,211,238,0.2)", border: "1px solid rgba(34,211,238,0.4)", color: "#22d3ee" }}>
                 <Globe className="w-4 h-4" />
               </div>
               <div>
-                <span className="font-bold text-sm tracking-[0.18em] text-white uppercase block">
-                  TEMPORA 3D CLIMATE EXPLORER
-                </span>
-                <span className="text-[10px] font-mono text-cyan-400 hidden sm:block">
-                  Live Global Atmospheric Grid · Real-time Rendering
-                </span>
+                <span className="font-bold text-sm tracking-[0.18em] text-white uppercase block">TEMPORA 3D CLIMATE EXPLORER</span>
+                <span className="text-[10px] font-mono text-cyan-400 hidden sm:block">Live Global Atmospheric Grid · Real-time Rendering</span>
               </div>
             </div>
-
-            {/* Close Explorer Button */}
-            <button
-              type="button"
-              onClick={() => setIsExplorerOpen(false)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/20 transition-all cursor-pointer hover:border-cyan-400/50"
-            >
+            <button type="button" onClick={() => setIsExplorerOpen(false)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-white text-xs font-semibold transition-all cursor-pointer hover:bg-white/20"
+              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }}>
               <X className="w-4 h-4" />
               <span>Back to Home</span>
             </button>
           </div>
 
-          {/* Centered Search Bar in 3D Climate */}
           <div className="relative z-30 w-full max-w-xl mx-auto my-2">
-            <LocationSearch
-              onSelectLocation={(loc) => {
-                handleSelectLocation(loc);
-              }}
-              placeholder="Search city or location in 3D Earth..."
-            />
+            <LocationSearch onSelectLocation={handleSelectLocation} placeholder="Search city or location in 3D Earth..." />
           </div>
 
-          {/* Central 3D Globe with Real Earth Rendering, Inertia Drag & Zoom */}
-          <div className="relative z-20 flex-1 flex items-center justify-center my-2 w-full max-h-[50vh] sm:max-h-[62vh]">
-            <GlobeScene
-              selectedLocation={currentLocation}
-              onSelectLocation={handleSelectLocation}
-              onOpenForecast={(loc) => handleGetForecast(loc)}
-              className="w-full h-full"
-            />
+          <div className="relative z-20 flex-1 flex items-center justify-center my-1 w-full min-h-[380px] sm:min-h-[460px] max-h-[60vh] sm:max-h-[68vh]">
+            <GlobeScene selectedLocation={currentLocation} onSelectLocation={handleSelectLocation} onOpenForecast={(loc) => handleGetForecast(loc)} className="w-full h-full" />
           </div>
 
-          {/* Bottom Controls: USE YOUR LOCATION, View Forecast & instructions */}
           <div className="relative z-30 flex flex-col items-center gap-3 pb-6">
             <div className="flex flex-wrap items-center justify-center gap-3">
               <UseMyLocationButton onLocationFound={handleSelectLocation} />
-
-              <button
-                type="button"
-                onClick={() => handleGetForecast(currentLocation)}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-cyan-500/20 hover:bg-cyan-500/35 text-cyan-300 font-semibold text-xs sm:text-sm border border-cyan-400/50 shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-all cursor-pointer hover:scale-105 active:scale-95"
-              >
+              <button type="button" onClick={() => handleGetForecast(currentLocation)}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-xs sm:text-sm transition-all cursor-pointer hover:scale-105 active:scale-95"
+                style={{ background: "rgba(34,211,238,0.2)", color: "#67e8f9", border: "1px solid rgba(34,211,238,0.5)", boxShadow: "0 0 20px rgba(34,211,238,0.3)" }}>
                 <span>View {currentLocation.name} Forecast</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
-
             <p className="text-xs sm:text-sm text-slate-400 font-medium tracking-wide flex items-center gap-2 text-center">
-              <span>Search city above or drag to rotate Earth</span>
+              <span>Drag to rotate Earth</span>
               <span className="text-cyan-400">•</span>
-              <span>Pinch or scroll to zoom</span>
+              <span>Scroll or pinch to zoom & reveal more places</span>
               <span className="text-cyan-400">•</span>
-              <span>Click markers to view forecast</span>
+              <span>Click markers to view live forecast</span>
             </p>
           </div>
         </motion.div>
       )}
 
-      {/* Full-Screen Atmospheric Telemetry Geolocation Loading Screen */}
+      {/* GPS Modals */}
       <AnimatePresence>
-        {isLocating && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-[#040812]/92 backdrop-blur-2xl text-center"
-          >
-            {/* Ambient atmospheric glow */}
-            <div className="absolute w-[450px] h-[450px] rounded-full bg-cyan-500/15 blur-[120px] pointer-events-none -z-10" />
-
-            <div className="relative flex flex-col items-center max-w-md mx-auto space-y-6">
-              {/* Radar pulse radar ring */}
-              <div className="relative w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center">
-                <span className="absolute inset-0 rounded-full border border-cyan-400/30 animate-ping" />
-                <span className="absolute inset-3 rounded-full border border-cyan-400/50 animate-pulse" />
-                <span className="absolute inset-0 rounded-full bg-gradient-to-tr from-cyan-500/20 to-blue-500/10 blur-md" />
-                
-                {/* Center Satellite / Navigation Icon */}
-                <div className="relative z-10 flex items-center justify-center w-16 h-16 rounded-full bg-[#071324] border-2 border-cyan-400 shadow-[0_0_30px_rgba(34,211,238,0.6)]">
-                  <Navigation className="w-8 h-8 text-cyan-400 animate-pulse" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-400/30 text-cyan-400 text-xs font-mono uppercase tracking-widest">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>GPS Triangulation Active</span>
-                </div>
-                <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                  Detecting Your Location
-                </h3>
-                <p className="text-sm text-slate-300 font-normal leading-relaxed max-w-sm">
-                  Connecting to atmospheric satellite network to retrieve your real-time local forecast...
-                </p>
-              </div>
-
-              {/* Progress bar simulation */}
-              <div className="w-64 h-1.5 rounded-full bg-white/10 overflow-hidden relative">
-                <motion.div
-                  className="h-full bg-gradient-to-r from-cyan-400 via-teal-400 to-blue-500 rounded-full"
-                  initial={{ width: "10%" }}
-                  animate={{ width: "95%" }}
-                  transition={{ duration: 4, ease: "easeInOut" }}
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsLocating(false)}
-                className="text-xs text-slate-400 hover:text-white underline underline-offset-4 transition-colors pt-2 cursor-pointer"
-              >
-                Cancel and return
-              </button>
-            </div>
-          </motion.div>
+        {gpsState === "permission" && (
+          <GpsPermissionModal key="gps-permission" onRequest={handleActivateGps} onCancel={resetGps} />
         )}
       </AnimatePresence>
 
-      {/* Geolocation Error Alert Notification */}
       <AnimatePresence>
-        {locateError && (
+        {gpsState === "locating" && (
+          <GpsLocatingScreen key="gps-locating" onCancel={resetGps} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {gpsState === "success" && foundLocation && (
+          <GpsSuccessPopup key="gps-success" cityName={foundLocation.name} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {gpsState === "error" && gpsError && (
           <motion.div
+            key="gps-error"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed top-20 z-50 max-w-lg mx-auto inset-x-4 p-4 rounded-2xl bg-rose-950/90 border border-rose-500/40 text-white shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3 text-xs"
+            className="fixed top-20 z-50 max-w-lg mx-auto inset-x-4 p-4 rounded-2xl flex items-center justify-between gap-3 text-xs backdrop-blur-xl shadow-2xl"
+            style={{ background: "rgba(69,10,10,0.92)", border: "1px solid rgba(239,68,68,0.4)", color: "white" }}
           >
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-              <span>{locateError}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setLocateError(null)}
-              className="p-1 hover:bg-white/10 rounded-full text-slate-300 hover:text-white shrink-0 cursor-pointer"
-            >
+            <span className="text-rose-300">{gpsError}</span>
+            <button type="button" onClick={resetGps}
+              className="p-1 rounded-full hover:bg-white/10 text-slate-300 hover:text-white shrink-0 cursor-pointer">
               <X className="w-4 h-4" />
             </button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* 6. Footer */}
-      <footer className="relative z-10 w-full py-8 px-4 bg-[#050B14] border-t border-white/10 text-slate-400 text-xs">
+      {/* Footer */}
+      <footer className="relative z-10 w-full py-8 px-4 border-t border-white/10 text-slate-400 text-xs" style={{ background: "#050B14" }}>
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="font-bold tracking-widest text-white uppercase font-sans">TEMPORA</span>
@@ -504,7 +698,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-
     </div>
   );
 }
