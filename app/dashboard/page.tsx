@@ -140,6 +140,40 @@ function DashboardContent() {
         </>
       )}
 
+      {/* Cloudy / Overcast Theme: Soft misty atmospheric cloud layers */}
+      {currentThemeId === "cloudy" && (
+        <>
+          <div
+            className="fixed inset-0 -z-20 pointer-events-none"
+            style={{
+              background: `radial-gradient(ellipse at 50% 20%, rgba(56, 189, 248, 0.15) 0%, transparent 60%),
+                           radial-gradient(ellipse at 80% 60%, rgba(148, 163, 184, 0.12) 0%, transparent 50%),
+                           linear-gradient(to bottom, #0F1E33 0%, #0A1424 50%, #050B14 100%)`,
+            }}
+          />
+          {/* Drifting soft overcast cloud haze */}
+          <div
+            className="fixed pointer-events-none -z-10"
+            style={{
+              top: "-10%",
+              left: "10%",
+              width: "80vw",
+              height: "450px",
+              borderRadius: "50%",
+              background: "radial-gradient(ellipse, rgba(148, 163, 184, 0.14) 0%, rgba(56, 189, 248, 0.08) 45%, transparent 75%)",
+              filter: "blur(60px)",
+              animation: "cloud-drift 18s ease-in-out infinite alternate",
+            }}
+          />
+          <style>{`
+            @keyframes cloud-drift {
+              0% { transform: translate(-30px, 0) scale(1); }
+              100% { transform: translate(30px, 15px) scale(1.08); }
+            }
+          `}</style>
+        </>
+      )}
+
       <Navbar activeTab="Forecast" theme={theme} />
 
       {/* Rainy Dark Theme: Realistic Falling Rain Simulation */}

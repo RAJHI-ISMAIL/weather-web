@@ -12,7 +12,7 @@ import { LocationSearch } from "@/components/location/LocationSearch";
 import { useWeather } from "@/hooks/useWeather";
 import { LocationData } from "@/types/location";
 import { THEMES, getAutoTheme, ThemeId } from "@/lib/theme";
-import { Sun, CloudRain, Flame } from "lucide-react";
+import { Sun, CloudRain, Flame, Cloud } from "lucide-react";
 
 interface WeatherDashboardProps {
   initialLocation?: LocationData;
@@ -84,6 +84,14 @@ export function WeatherDashboard({
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/20 text-orange-600 border border-orange-400/40 text-xs font-semibold">
           <Flame className="w-3.5 h-3.5 text-orange-500 animate-pulse" />
           <span>Active Atmosphere: Extreme Heatwave</span>
+        </div>
+      );
+    }
+    if (activeThemeId === "cloudy") {
+      return (
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-500/20 text-sky-200 border border-sky-400/30 text-xs font-semibold backdrop-blur-md">
+          <Cloud className="w-3.5 h-3.5 text-sky-300" />
+          <span>Active Atmosphere: Overcast / Cloudy</span>
         </div>
       );
     }

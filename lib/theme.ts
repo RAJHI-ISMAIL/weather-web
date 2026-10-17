@@ -1,6 +1,6 @@
 import { WeatherAlert } from "@/types/weather";
 
-export type ThemeId = "sunny" | "rainy" | "heatwave";
+export type ThemeId = "sunny" | "cloudy" | "rainy" | "heatwave";
 
 export interface ThemeTokens {
   id: ThemeId;
@@ -57,6 +57,37 @@ export const THEMES: Record<ThemeId, ThemeTokens> = {
     chartStroke: "#0EA5E9",
     chartGradient: "#0EA5E9",
     accentColor: "#0EA5E9",
+  },
+
+  cloudy: {
+    id: "cloudy",
+    name: "Cloudy & Overcast (Atmospheric)",
+    isDark: true,
+    pageBackground: "bg-[#0A1220]",
+    navbarBg: "bg-[#0F1E33]/60 backdrop-blur-xl",
+    navbarBorder: "border-slate-700/50",
+    navbarText: "text-slate-100",
+    heroTagColor: "text-sky-300",
+    heroTitleColor: "text-white",
+    heroSubtextColor: "text-slate-300",
+    heroTempColor: "text-white",
+    heroUnitColor: "text-sky-300",
+    forecastCardBg: (isActive) =>
+      isActive
+        ? "bg-[#13233D] backdrop-blur-xl shadow-[0_0_25px_rgba(56,189,248,0.2)]"
+        : "bg-[#0E1A2E]/60 backdrop-blur-md hover:bg-[#13233D]/70",
+    forecastCardBorder: (isActive) =>
+      isActive
+        ? "border-2 border-sky-400/80"
+        : "border border-slate-700/40 hover:border-slate-600/70",
+    forecastCardText: "text-slate-100",
+    cardBg: "bg-[#0E1A2E]/70 backdrop-blur-xl shadow-[0_14px_40px_rgba(0,0,0,0.5)]",
+    cardBorder: "border border-slate-700/40",
+    cardTextPrimary: "text-white",
+    cardTextSecondary: "text-slate-300",
+    chartStroke: "#38BDF8",
+    chartGradient: "#0284C7",
+    accentColor: "#38BDF8",
   },
 
   rainy: {
@@ -119,7 +150,14 @@ export const THEMES: Record<ThemeId, ThemeTokens> = {
 };
 
 /**
- * Determine dynamic theme based on meteorological conditions
+ * Determine dynamic theme based on meteorological conditions.
+ *
+ * Rules:
+ * - Extreme heat condition (temp >= 35°C or active heat alert) -> 'heatwave'
+ * - Night condition (!isDay) -> 'rainy' (night glassmorphism)
+ * - Precipitation & storms (weatherCode 50-99) -> 'rainy'
+ * - Overcast, cloudy, foggy (weatherCode 2, 3, 45, 48) -> 'cloudy' (NOT sunny!)
+ * - Clear skies & mainly clear daylight (weatherCode 0, 1) -> 'sunny'
  */
 export function getAutoTheme(
   weatherCode: number,
@@ -127,16 +165,31 @@ export function getAutoTheme(
   isDay: boolean,
   alerts?: WeatherAlert[]
 ): ThemeId {
-  // Extreme heat condition
+  // 1. Extreme heat condition
   if (temperature >= 35 || (alerts && alerts.some((a) => a.severity === "extreme"))) {
     return "heatwave";
   }
 
-  // Rain, storms, snow, drizzle or night
-  if (!isDay || (weatherCode >= 50 && weatherCode <= 99)) {
+  // 2. Nighttime: always night / dark glassmorphism
+  if (!isDay) {
     return "rainy";
   }
 
-  // Daylight clear or cloudy
-  return "sunny";
+  // 3. Precipitation: drizzle, rain, snow, showers, thunderstorms (WMO 50 - 99)
+  if (weatherCode >= 50 && weatherCode <= 99) {
+    return "rainy";
+  }
+
+  // 4. Overcast (3), Fog (45, 48), or Partly Cloudy (2)
+  if (weatherCode === 3 || weatherCode === 2 || weatherCode === 45 || weatherCode === 48) {
+    return "cloudy";
+  }
+
+  // 5. Clear sky (0) or mainly clear (1)
+  if (weatherCode === 0 || weatherCode === 1) {
+    return "sunny";
+  }
+
+  // Safe fallback: cloudy if daylight
+  return "cloudy";
 }

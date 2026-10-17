@@ -283,9 +283,12 @@ export function Navbar({
                 href="/"
                 className="flex items-center gap-2.5 group focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 rounded-full shrink-0"
               >
-                <div className="relative flex items-center justify-center w-8 h-8 rounded-full bg-cyan-500/15 border border-cyan-400/40 group-hover:border-cyan-400/80 group-hover:shadow-[0_0_15px_rgba(34,211,238,0.5)] transition-all">
-                  <Globe className="w-4 h-4 text-cyan-400 transition-transform duration-500 group-hover:rotate-180" />
-                  <span className="absolute inset-0 rounded-full border border-cyan-400/20 animate-ping opacity-25" />
+                <div className="relative flex items-center justify-center w-8 h-8 rounded-xl overflow-hidden shadow-[0_0_15px_rgba(34,211,238,0.35)] group-hover:shadow-[0_0_20px_rgba(34,211,238,0.6)] group-hover:scale-105 transition-all duration-300 border border-white/20 bg-slate-900/40">
+                  <img
+                    src="/logo.jpg"
+                    alt="TEMPORA Logo"
+                    className="w-full h-full object-cover scale-[1.05]"
+                  />
                 </div>
                 <span
                   className={`font-bold text-xs sm:text-sm tracking-[0.18em] uppercase font-sans ${textColor}`}

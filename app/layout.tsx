@@ -19,6 +19,10 @@ export const metadata: Metadata = {
   description:
     "An immersive, interactive 3D weather experience. Explore real-time conditions, global forecasts, and atmospheric insights across a living Earth.",
   keywords: ["weather", "3D Earth", "interactive globe", "forecast", "climate", "TEMPORA"],
+  icons: {
+    icon: "/logo.jpg",
+    apple: "/logo.jpg",
+  },
 };
 
 export default function RootLayout({

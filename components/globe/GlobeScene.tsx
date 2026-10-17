@@ -62,6 +62,115 @@ const QUICK_DESTINATIONS = [
   { name: "Rio de Janeiro", country: "Brazil", lat: -22.9068, lng: -43.1729, icon: "🏖️", altitude: 0.95 },
 ];
 
+// ─── Parabolic Great-Circle Camera Flight (Google Earth Inspiration) ─────────
+
+/**
+ * Parabolic Great-Circle Camera Flight.
+ *
+ * Interpolates along the true spherical geodesic (great-circle slerp)
+ * while ascending into high orbit mid-flight (parabolic altitude apex)
+ * and descending into the target location with smooth cubic deceleration.
+ */
+function flyParabolic({
+  start,
+  target,
+  duration,
+  onUpdate,
+  onComplete,
+}: {
+  start: { lat: number; lng: number; altitude: number };
+  target: { lat: number; lng: number; altitude: number };
+  duration?: number;
+  onUpdate: (pos: { lat: number; lng: number; altitude: number }) => void;
+  onComplete?: () => void;
+}): () => void {
+  // Convert lat/lng to 3D Cartesian unit vectors
+  const toVec = (lat: number, lng: number) => {
+    const phi = (lat * Math.PI) / 180;
+    const theta = (lng * Math.PI) / 180;
+    return [
+      Math.cos(phi) * Math.cos(theta),
+      Math.sin(phi),
+      Math.cos(phi) * Math.sin(theta),
+    ];
+  };
+
+  const v1 = toVec(start.lat, start.lng);
+  const v2 = toVec(target.lat, target.lng);
+
+  // Dot product and angular distance in radians (0 to PI)
+  const dot = Math.max(-1, Math.min(1, v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]));
+  const omega = Math.acos(dot);
+
+  // Dynamic flight duration based on angular distance:
+  // Short hops (< 15°): ~1100ms
+  // Long flights (transcontinental): ~2100ms - 2500ms
+  const flightDuration = duration ?? Math.round(1100 + (omega / Math.PI) * 1400);
+
+  // Parabolic apex altitude boost:
+  // High distance flights reach an apex in high orbit (up to +1.8 altitude)
+  const apexBoost = Math.max(0.15, (omega / Math.PI) * 1.85);
+
+  const startTime = performance.now();
+  let rafId: number | null = null;
+  let cancelled = false;
+
+  const sinOmega = Math.sin(omega);
+
+  const step = (now: number) => {
+    if (cancelled) return;
+    const elapsed = now - startTime;
+    const rawT = Math.min(1, elapsed / flightDuration);
+
+    // Smooth cubic ease-in-out curve
+    const t = rawT < 0.5 ? 4 * rawT * rawT * rawT : 1 - Math.pow(-2 * rawT + 2, 3) / 2;
+
+    // Slerp for unit direction vector
+    let currentLat: number;
+    let currentLng: number;
+
+    if (omega < 0.002 || Math.abs(sinOmega) < 0.0001) {
+      currentLat = start.lat + (target.lat - start.lat) * t;
+      currentLng = start.lng + (target.lng - start.lng) * t;
+    } else {
+      const a = Math.sin((1 - t) * omega) / sinOmega;
+      const b = Math.sin(t * omega) / sinOmega;
+      const x = a * v1[0] + b * v2[0];
+      const y = a * v1[1] + b * v2[1];
+      const z = a * v1[2] + b * v2[2];
+
+      const norm = Math.hypot(x, y, z) || 1;
+      const nx = x / norm;
+      const ny = y / norm;
+      const nz = z / norm;
+
+      currentLat = (Math.asin(Math.max(-1, Math.min(1, ny))) * 180) / Math.PI;
+      currentLng = (Math.atan2(nz, nx) * 180) / Math.PI;
+    }
+
+    // Parabolic altitude curve:
+    // Base interpolation + 4 * t * (1 - t) * apexBoost
+    const baseAlt = (1 - t) * start.altitude + t * target.altitude;
+    const arc = 4 * t * (1 - t) * apexBoost;
+    const currentAlt = Math.max(0.42, baseAlt + arc);
+
+    onUpdate({ lat: currentLat, lng: currentLng, altitude: currentAlt });
+
+    if (rawT < 1) {
+      rafId = requestAnimationFrame(step);
+    } else {
+      onComplete?.();
+    }
+  };
+
+  rafId = requestAnimationFrame(step);
+
+  return () => {
+    cancelled = true;
+    if (rafId !== null) cancelAnimationFrame(rafId);
+  };
+}
+
 export function GlobeScene({
   selectedLocation,
   onSelectLocation,
@@ -71,6 +180,7 @@ export function GlobeScene({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const globeRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const cancelFlightRef = useRef<(() => void) | null>(null);
 
   const [dimensions, setDimensions] = useState({ width: 600, height: 600 });
   const [isReady, setIsReady] = useState(false);
@@ -80,6 +190,14 @@ export function GlobeScene({
   const [showAtmosphere, setShowAtmosphere] = useState(true);
   const [altitude, setAltitude] = useState(2.3);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [flightStatus, setFlightStatus] = useState<string | null>(null);
+
+  // Clean up active flight on unmount
+  useEffect(() => {
+    return () => {
+      if (cancelFlightRef.current) cancelFlightRef.current();
+    };
+  }, []);
 
   // Measure container for responsive sizing
   useEffect(() => {
@@ -151,14 +269,61 @@ export function GlobeScene({
     setActivePlace(selectedLocation);
   }
 
-  // Fly globe camera to incoming selectedLocation
+  // ─── Parabolic Camera Flight Controller ────────────────────────────────────
+
+  const flyToTarget = useCallback(
+    ({
+      lat,
+      lng,
+      targetAltitude,
+      label,
+    }: {
+      lat: number;
+      lng: number;
+      targetAltitude: number;
+      label?: string;
+    }) => {
+      if (!globeRef.current) return;
+      if (cancelFlightRef.current) {
+        cancelFlightRef.current();
+        cancelFlightRef.current = null;
+      }
+
+      const pov = globeRef.current.pointOfView?.();
+      const startPos = {
+        lat: typeof pov?.lat === "number" ? pov.lat : 20,
+        lng: typeof pov?.lng === "number" ? pov.lng : 0,
+        altitude: typeof pov?.altitude === "number" ? pov.altitude : altitude,
+      };
+
+      if (label) setFlightStatus(label);
+
+      cancelFlightRef.current = flyParabolic({
+        start: startPos,
+        target: { lat, lng, altitude: targetAltitude },
+        onUpdate: (pos) => {
+          globeRef.current?.pointOfView(pos, 0);
+          setAltitude(pos.altitude);
+        },
+        onComplete: () => {
+          cancelFlightRef.current = null;
+          setFlightStatus(null);
+        },
+      });
+    },
+    [altitude]
+  );
+
+  // Fly globe camera to incoming selectedLocation via parabolic arc
   useEffect(() => {
     if (!selectedLocation || !globeRef.current || !isReady) return;
-    globeRef.current.pointOfView(
-      { lat: selectedLocation.latitude, lng: selectedLocation.longitude, altitude: 1.1 },
-      1400
-    );
-  }, [selectedLocation, isReady]);
+    flyToTarget({
+      lat: selectedLocation.latitude,
+      lng: selectedLocation.longitude,
+      targetAltitude: 1.05,
+      label: selectedLocation.name,
+    });
+  }, [selectedLocation, isReady, flyToTarget]);
 
   // Filter and format places based on current zoom altitude and selected category
   const displayedMarkers: GlobeMarker[] = useMemo(() => {
@@ -274,7 +439,7 @@ export function GlobeScene({
     ];
   }, [activePlace]);
 
-  // Click handler on a place marker/label
+  // Click handler on a place marker/label with parabolic camera flight
   const handleMarkerClick = useCallback(
     (d: object) => {
       const marker = d as GlobeMarker;
@@ -287,32 +452,34 @@ export function GlobeScene({
       setActivePlace(loc);
       onSelectLocation?.(loc);
 
-      if (globeRef.current) {
-        // Zoom closer into landmarks or cities smoothly
-        const targetAlt = marker.tier === 4 ? 0.75 : 1.05;
-        globeRef.current.pointOfView(
-          { lat: marker.lat, lng: marker.lng, altitude: targetAlt },
-          1200
-        );
-      }
+      const targetAlt = marker.tier === 4 ? 0.75 : 1.05;
+      flyToTarget({
+        lat: marker.lat,
+        lng: marker.lng,
+        targetAltitude: targetAlt,
+        label: marker.name,
+      });
     },
-    [onSelectLocation]
+    [onSelectLocation, flyToTarget]
   );
 
-  // Click handler on globe surface — reverse geocode coordinates and drop pin
+  // Click handler on globe surface — reverse geocode coordinates and parabolic flight
   const handleGlobeClick = useCallback(
     async ({ lat, lng }: { lat: number; lng: number }) => {
-      if (globeRef.current) {
-        globeRef.current.pointOfView({ lat, lng, altitude: 1.2 }, 1200);
-      }
+      flyToTarget({
+        lat,
+        lng,
+        targetAltitude: 1.15,
+        label: "Selected Coordinate",
+      });
       const loc = await reverseGeocode(lat, lng);
       setActivePlace(loc);
       onSelectLocation?.(loc);
     },
-    [onSelectLocation]
+    [onSelectLocation, flyToTarget]
   );
 
-  // Fly directly to a destination from the Quick Bar
+  // Fly directly to a destination from the Quick Bar via parabolic arc
   const handleFlyToDestination = useCallback(
     (dest: (typeof QUICK_DESTINATIONS)[0]) => {
       const loc: LocationData = {
@@ -324,14 +491,14 @@ export function GlobeScene({
       setActivePlace(loc);
       onSelectLocation?.(loc);
 
-      if (globeRef.current) {
-        globeRef.current.pointOfView(
-          { lat: dest.lat, lng: dest.lng, altitude: dest.altitude },
-          1400
-        );
-      }
+      flyToTarget({
+        lat: dest.lat,
+        lng: dest.lng,
+        targetAltitude: dest.altitude,
+        label: dest.name,
+      });
     },
-    [onSelectLocation]
+    [onSelectLocation, flyToTarget]
   );
 
   // ─── Camera Controls ───────────────────────────────────────────────────────
@@ -404,16 +571,27 @@ export function GlobeScene({
 
       {/* Top Google Earth Inspired HUD: Zoom Level & Category Filter */}
       <div className="absolute top-2 left-2 right-2 sm:left-4 sm:right-4 z-20 flex flex-col sm:flex-row items-center justify-between gap-2 pointer-events-none">
-        {/* Zoom Level Indicator */}
-        <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0A1628]/85 border border-cyan-500/30 backdrop-blur-md text-[11px] font-medium text-cyan-300 shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-          <span className="font-semibold text-white">{zoomInfo.name}</span>
-          <span className="text-cyan-500/80">•</span>
-          <span className="text-slate-300 hidden md:inline">{zoomInfo.description}</span>
-          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-            {displayedMarkers.length} places
-          </span>
-        </div>
+        {/* Zoom Level Indicator / Active Flight Telemetry */}
+        {flightStatus ? (
+          <div className="pointer-events-auto flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0A1628]/90 border border-cyan-400/60 backdrop-blur-md text-[11px] font-medium text-cyan-300 shadow-[0_0_25px_rgba(34,211,238,0.35)] animate-pulse">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+            <span className="font-semibold text-white">Cruising to {flightStatus}</span>
+            <span className="text-cyan-500/80">•</span>
+            <span className="text-cyan-200 font-mono text-[10px]">
+              Orbital Apex ({altitude.toFixed(2)} R⊕)
+            </span>
+          </div>
+        ) : (
+          <div className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0A1628]/85 border border-cyan-500/30 backdrop-blur-md text-[11px] font-medium text-cyan-300 shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+            <span className="font-semibold text-white">{zoomInfo.name}</span>
+            <span className="text-cyan-500/80">•</span>
+            <span className="text-slate-300 hidden md:inline">{zoomInfo.description}</span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+              {displayedMarkers.length} places
+            </span>
+          </div>
+        )}
 
         {/* Category Filter Chips */}
         <div className="pointer-events-auto flex items-center gap-1 p-1 rounded-full bg-[#0A1628]/80 border border-white/10 backdrop-blur-md shadow-lg overflow-x-auto max-w-full">
@@ -548,6 +726,15 @@ export function GlobeScene({
               controls.zoomSpeed = 1.0;
               controls.autoRotate = isAutoRotating;
               controls.autoRotateSpeed = 0.8;
+
+              // Gracefully cancel automated flight if user manually grabs the Earth
+              controls.addEventListener("start", () => {
+                if (cancelFlightRef.current) {
+                  cancelFlightRef.current();
+                  cancelFlightRef.current = null;
+                  setFlightStatus(null);
+                }
+              });
             }
           }
         }}

@@ -22,9 +22,11 @@ import {
   Navigation,
   MapPin,
   CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 import Shuffle from "@/components/ui/Shuffle";
 import SpecularButton from "@/components/ui/SpecularButton";
+import { AtmosphericIntro } from "@/components/ui/AtmosphericIntro";
 
 // ─── GPS Permission Modal ─────────────────────────────────────────────────────
 function GpsPermissionModal({ onRequest, onCancel }: { onRequest: () => void; onCancel: () => void }) {
@@ -303,6 +305,7 @@ export default function Home() {
 
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [isExplorerOpen, setIsExplorerOpen] = useState(false);
+  const [showIntro, setShowIntro] = useState(false);
 
   // GPS state machine: idle | permission | locating | success | error
   const [gpsState, setGpsState] = useState<"idle" | "permission" | "locating" | "success" | "error">("idle");
@@ -415,6 +418,10 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen bg-[#050B14] text-[#F8FAFC] overflow-x-hidden flex flex-col font-sans selection:bg-cyan-500/30">
+      <AtmosphericIntro
+        forceShow={showIntro}
+        onComplete={() => setShowIntro(false)}
+      />
 
       <Navbar
         activeTab={isExplorerOpen ? "Globe" : "Discover"}
@@ -581,6 +588,15 @@ export default function Home() {
                 <span>{utcTime}</span>
               </div>
             )}
+            <button
+              type="button"
+              onClick={() => setShowIntro(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-mono text-cyan-300 hover:text-white bg-white/5 hover:bg-cyan-500/20 border border-white/10 hover:border-cyan-400/40 backdrop-blur-md transition-all cursor-pointer active:scale-95 shadow-sm"
+              title="Replay Deep Space Orbital Descent Intro"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+              <span>Replay Intro</span>
+            </button>
           </motion.div>
         </div>
       </section>
@@ -597,9 +613,8 @@ export default function Home() {
         >
           <div className="relative w-full flex items-center justify-between max-w-7xl mx-auto z-30">
             <div className="flex items-center gap-2.5">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full"
-                style={{ background: "rgba(34,211,238,0.2)", border: "1px solid rgba(34,211,238,0.4)", color: "#22d3ee" }}>
-                <Globe className="w-4 h-4" />
+              <div className="flex items-center justify-center w-8 h-8 rounded-xl overflow-hidden border border-white/20 shadow-[0_0_12px_rgba(34,211,238,0.4)]">
+                <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover scale-[1.05]" />
               </div>
               <div>
                 <span className="font-bold text-sm tracking-[0.18em] text-white uppercase block">TEMPORA 3D CLIMATE EXPLORER</span>
@@ -684,7 +699,10 @@ export default function Home() {
       {/* Footer */}
       <footer className="relative z-10 w-full py-8 px-4 border-t border-white/10 text-slate-400 text-xs" style={{ background: "#050B14" }}>
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="w-5 h-5 rounded-md overflow-hidden border border-white/20 shadow-[0_0_8px_rgba(34,211,238,0.3)]">
+              <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover scale-[1.05]" />
+            </div>
             <span className="font-bold tracking-widest text-white uppercase font-sans">TEMPORA</span>
             <span>—</span>
             <span>Your world. In every forecast.</span>
