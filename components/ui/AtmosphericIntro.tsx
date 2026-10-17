@@ -53,28 +53,32 @@ export function AtmosphericIntro({ onComplete, forceShow = false }: AtmosphericI
       handleFinish();
     }, 2650);
 
-    // Altitude & Velocity countdown loop
+    // Altitude & Velocity countdown loop (throttled to 20fps to prevent render churn)
     let rafId: number;
+    let lastUpdate = 0;
     const startTime = performance.now();
     const updateTelemetry = (now: number) => {
       const elapsed = (now - startTime) / 1000;
-      if (elapsed < 0.75) {
-        setAltitudeKm(Math.round(12800 - elapsed * 1200));
-        setVelocityKmS(7.8);
-      } else if (elapsed < 1.6) {
-        const p = (elapsed - 0.75) / 0.85;
-        // Rapid plunge through the upper atmosphere
-        const alt = Math.round(11900 * Math.pow(1 - p, 2) + 350 * p);
-        setAltitudeKm(alt);
-        setVelocityKmS(Number((7.8 + p * 18.4).toFixed(1)));
-      } else if (elapsed < 2.2) {
-        const p = (elapsed - 1.6) / 0.6;
-        const alt = Math.round(350 * (1 - p));
-        setAltitudeKm(Math.max(0, alt));
-        setVelocityKmS(Number((26.2 * (1 - p)).toFixed(1)));
-      } else {
-        setAltitudeKm(0);
-        setVelocityKmS(0);
+      
+      if (now - lastUpdate >= 50) {
+        lastUpdate = now;
+        if (elapsed < 0.75) {
+          setAltitudeKm(Math.round(12800 - elapsed * 1200));
+          setVelocityKmS(7.8);
+        } else if (elapsed < 1.6) {
+          const p = (elapsed - 0.75) / 0.85;
+          const alt = Math.round(11900 * Math.pow(1 - p, 2) + 350 * p);
+          setAltitudeKm(alt);
+          setVelocityKmS(Number((7.8 + p * 18.4).toFixed(1)));
+        } else if (elapsed < 2.2) {
+          const p = (elapsed - 1.6) / 0.6;
+          const alt = Math.round(350 * (1 - p));
+          setAltitudeKm(Math.max(0, alt));
+          setVelocityKmS(Number((26.2 * (1 - p)).toFixed(1)));
+        } else {
+          setAltitudeKm(0);
+          setVelocityKmS(0);
+        }
       }
 
       if (elapsed < 2.6) {

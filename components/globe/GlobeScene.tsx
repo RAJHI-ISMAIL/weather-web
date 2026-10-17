@@ -241,7 +241,7 @@ export function GlobeScene({
         if (pov && typeof pov.altitude === "number") {
           // Quantize/update altitude
           setAltitude((prev) => {
-            if (Math.abs(prev - pov.altitude) > 0.04) {
+            if (Math.abs(prev - pov.altitude) > 0.12) {
               return pov.altitude;
             }
             return prev;
@@ -303,11 +303,11 @@ export function GlobeScene({
         target: { lat, lng, altitude: targetAltitude },
         onUpdate: (pos) => {
           globeRef.current?.pointOfView(pos, 0);
-          setAltitude(pos.altitude);
         },
         onComplete: () => {
           cancelFlightRef.current = null;
           setFlightStatus(null);
+          setAltitude(targetAltitude);
         },
       });
     },
@@ -647,7 +647,7 @@ export function GlobeScene({
         labelColor={(d: object) => (d as GlobeMarker).color}
         labelSize={(d: object) => (d as GlobeMarker).labelSize}
         labelAltitude={0.012}
-        labelResolution={3}
+        labelResolution={2}
         labelIncludeDot={true}
         labelDotRadius={(d: object) => (d as GlobeMarker).dotRadius}
         labelDotOrientation={() => "right"}

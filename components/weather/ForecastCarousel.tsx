@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState, useCallback } from "react";
 import {
@@ -299,7 +299,7 @@ export function ForecastCarousel({
             curve={0}
             tilt={-6}
             perspective={2200}
-            autoplay="drift"
+            autoplay="off"
             pauseOnHover={true}
             focusOnClick={true}
             captions={false}

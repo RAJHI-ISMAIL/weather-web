@@ -61,33 +61,41 @@ export function RainEffect({ intensity = "medium", className = "" }: RainEffectP
       });
     }
 
+    let isPaused = false;
+    const handleVisibility = () => {
+      isPaused = document.hidden;
+      if (!isPaused) {
+        animId = requestAnimationFrame(render);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
     const render = () => {
+      if (isPaused) return;
       ctx.clearRect(0, 0, width, height);
 
-      // Render raindrops
+      // Batched raindrop stroke for high performance
       ctx.lineWidth = 1.2;
       ctx.lineCap = "round";
+      ctx.strokeStyle = "rgba(186, 230, 253, 0.35)";
+      ctx.beginPath();
 
       for (let i = 0; i < drops.length; i++) {
         const d = drops[i];
-
-        ctx.strokeStyle = `rgba(186, 230, 253, ${d.opacity})`;
-        ctx.beginPath();
         ctx.moveTo(d.x, d.y);
         ctx.lineTo(d.x + d.xs * 2, d.y + d.l);
-        ctx.stroke();
 
         d.x += d.xs;
         d.y += d.ys;
 
         // Ground splash trigger
-        if (d.y > height - 40 && Math.random() > 0.85) {
+        if (d.y > height - 40 && Math.random() > 0.88) {
           splashes.push({
             x: d.x,
             y: d.y + d.l,
             r: 1,
-            maxR: Math.random() * 6 + 3,
-            opacity: 0.6,
+            maxR: Math.random() * 5 + 2.5,
+            opacity: 0.5,
           });
         }
 
@@ -96,6 +104,7 @@ export function RainEffect({ intensity = "medium", className = "" }: RainEffectP
           d.y = -20;
         }
       }
+      ctx.stroke();
 
       // Render ground splashes
       for (let j = splashes.length - 1; j >= 0; j--) {
@@ -121,6 +130,7 @@ export function RainEffect({ intensity = "medium", className = "" }: RainEffectP
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener("resize", handleResize);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [intensity]);
 

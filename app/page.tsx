@@ -28,6 +28,7 @@ import Shuffle from "@/components/ui/Shuffle";
 import SpecularButton from "@/components/ui/SpecularButton";
 import { AtmosphericIntro } from "@/components/ui/AtmosphericIntro";
 import { WeatherMascot } from "@/components/ui/WeatherMascot";
+import { WeatherLoading } from "@/components/weather/WeatherLoading";
 
 // ─── GPS Permission Modal ─────────────────────────────────────────────────────
 function GpsPermissionModal({ onRequest, onCancel }: { onRequest: () => void; onCancel: () => void }) {
@@ -287,6 +288,7 @@ export default function Home() {
   const [gpsState, setGpsState] = useState<"idle" | "permission" | "locating" | "success" | "error">("idle");
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [foundLocation, setFoundLocation] = useState<LocationData | null>(null);
+  const [forecastLoadingTarget, setForecastLoadingTarget] = useState<LocationData | null>(null);
 
   const [utcTime, setUtcTime] = useState<string>("");
 
@@ -325,6 +327,7 @@ export default function Home() {
   const handleSelectLocation = (loc: LocationData) => setCurrentLocation(loc);
 
   const navigateToForecast = (loc: LocationData) => {
+    setForecastLoadingTarget(loc);
     setIsExplorerOpen(false);
     router.push(
       `/dashboard?lat=${loc.latitude}&lon=${loc.longitude}&city=${encodeURIComponent(loc.name)}&country=${encodeURIComponent(loc.country || "")}`
@@ -422,12 +425,7 @@ export default function Home() {
           <video
             src="/background-vd.mp4"
             autoPlay loop muted playsInline
-            className="w-full h-full object-cover object-center scale-105 hidden lg:block"
-          />
-          <video
-            src="/background-vd.mp4"
-            autoPlay loop muted playsInline
-            className="w-full h-full object-cover object-center scale-105 lg:hidden"
+            className="w-full h-full object-cover object-center scale-105 pointer-events-none"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-[#050B14] via-[#050B14]/80 to-transparent lg:w-3/4" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#050B14] via-transparent to-[#050B14]/75" />
@@ -633,6 +631,25 @@ export default function Home() {
           </div>
         </motion.div>
       )}
+
+      {/* Instant Forecast Transition Loading Screen */}
+      <AnimatePresence>
+        {forecastLoadingTarget && (
+          <motion.div
+            key="forecast-transition-loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-6 text-center bg-[#050B14]/95 backdrop-blur-2xl"
+          >
+            <WeatherLoading
+              locationName={forecastLoadingTarget.name}
+              message="Acquiring atmospheric telemetry and generating real-time forecast..."
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* GPS Modals */}
       <AnimatePresence>

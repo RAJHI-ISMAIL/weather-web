@@ -46,16 +46,7 @@ function DashboardContent() {
             muted
             loop
             playsInline
-            className="fixed inset-0 w-full h-full object-cover -z-20 pointer-events-none hidden lg:block"
-            src="/sunny-bg.mp4"
-          />
-          <video
-            key="sunny-bg-mobile"
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="fixed inset-0 w-full h-full object-cover -z-20 pointer-events-none lg:hidden"
+            className="fixed inset-0 w-full h-full object-cover -z-20 pointer-events-none"
             src="/sunny-bg.mp4"
           />
           {/* Vignette: darken edges so center video is vivid, content readable */}
@@ -97,16 +88,7 @@ function DashboardContent() {
             muted
             loop
             playsInline
-            className="fixed inset-0 w-full h-full object-cover -z-20 pointer-events-none hidden lg:block"
-            src="/heatwave-bg.mp4"
-          />
-          <video
-            key="heatwave-bg-mobile"
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="fixed inset-0 w-full h-full object-cover -z-20 pointer-events-none lg:hidden"
+            className="fixed inset-0 w-full h-full object-cover -z-20 pointer-events-none"
             src="/heatwave-bg.mp4"
           />
           {/* Warm vignette: keeps center video vivid while keeping white/glass cards and text readable */}

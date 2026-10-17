@@ -19,6 +19,8 @@ export function useWeather(
     let ignore = false;
 
     async function loadData() {
+      setLoading(true);
+      setError(null);
       try {
         const data = await fetchWeatherData(latitude, longitude, cityName, country);
         if (ignore) return;
