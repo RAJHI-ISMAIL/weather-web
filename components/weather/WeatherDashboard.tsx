@@ -8,6 +8,7 @@ import { WeatherDetailsGrid } from "@/components/weather/WeatherDetailsGrid";
 import { WeatherAlert } from "@/components/weather/WeatherAlert";
 import { WeatherLoading } from "@/components/weather/WeatherLoading";
 import { WeatherError } from "@/components/weather/WeatherError";
+import { WeatherSyncBanner } from "@/components/weather/WeatherSyncBanner";
 import { LocationSearch } from "@/components/location/LocationSearch";
 import { useWeather } from "@/hooks/useWeather";
 import { LocationData } from "@/types/location";
@@ -130,8 +131,13 @@ export function WeatherDashboard({
         )}
       </div>
 
-      {/* Loading state */}
-      {loading && <WeatherLoading />}
+      {/* Atmospheric Sync Success Banner */}
+      {!loading && weather && (
+        <WeatherSyncBanner weather={weather} locationName={location.name} />
+      )}
+
+      {/* Loading state with 3D GPS & Mascot */}
+      {loading && <WeatherLoading locationName={location.name} />}
 
       {/* Error state */}
       {!loading && error && <WeatherError message={error} onRetry={refetch} />}

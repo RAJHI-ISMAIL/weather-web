@@ -27,6 +27,7 @@ import {
 import Shuffle from "@/components/ui/Shuffle";
 import SpecularButton from "@/components/ui/SpecularButton";
 import { AtmosphericIntro } from "@/components/ui/AtmosphericIntro";
+import { WeatherMascot } from "@/components/ui/WeatherMascot";
 
 // ─── GPS Permission Modal ─────────────────────────────────────────────────────
 function GpsPermissionModal({ onRequest, onCancel }: { onRequest: () => void; onCancel: () => void }) {
@@ -135,29 +136,18 @@ function GpsLocatingScreen({ onCancel }: { onCancel: () => void }) {
         className="absolute w-[450px] h-[450px] rounded-full pointer-events-none"
         style={{ background: "radial-gradient(circle, rgba(34,211,238,0.15) 0%, transparent 70%)" }}
       />
-      <div className="relative flex flex-col items-center max-w-sm mx-auto space-y-7">
-        <div className="relative w-32 h-32 flex items-center justify-center">
-          <span className="absolute inset-0 rounded-full border border-cyan-400/25 animate-ping" />
-          <span className="absolute inset-4 rounded-full border border-cyan-400/40 animate-pulse" />
-          <span
-            className="absolute inset-0 rounded-full blur-xl"
-            style={{ background: "rgba(34,211,238,0.15)" }}
-          />
-          <div
-            className="relative z-10 flex items-center justify-center w-16 h-16 rounded-full"
-            style={{
-              background: "#071324",
-              border: "2px solid #22d3ee",
-              boxShadow: "0 0 30px rgba(34,211,238,0.6)",
-            }}
-          >
-            <Navigation className="w-8 h-8 text-cyan-400 animate-pulse" />
-          </div>
+      <div className="relative flex flex-col items-center max-w-sm mx-auto space-y-6">
+        {/* 3D GPS Gyroscope Orbit & Scanning Weather Mascot */}
+        <div className="relative">
+          <WeatherMascot mode="gps" size="md" />
+          <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-mono tracking-widest uppercase bg-cyan-950/90 text-cyan-300 border border-cyan-400/50 shadow-[0_0_15px_rgba(34,211,238,0.4)] backdrop-blur-md">
+            SATELLITE BEACON SCAN
+          </span>
         </div>
 
         <div className="space-y-2">
           <div
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono uppercase tracking-widest"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-mono uppercase tracking-widest"
             style={{
               background: "rgba(34,211,238,0.1)",
               border: "1px solid rgba(34,211,238,0.3)",
@@ -165,13 +155,13 @@ function GpsLocatingScreen({ onCancel }: { onCancel: () => void }) {
             }}
           >
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            GPS Triangulation Active
+            GPS 3D Triangulation Active
           </div>
           <h3 className="text-2xl font-bold text-white tracking-tight">
-            Locking onto your location…
+            Locking onto your coordinates…
           </h3>
           <p className="text-sm text-slate-300 leading-relaxed max-w-xs mx-auto">
-            Connecting to satellite network to retrieve your real-time local forecast.
+            Interrogating orbital constellation to calibrate your local atmospheric telemetry.
           </p>
         </div>
 
@@ -182,7 +172,7 @@ function GpsLocatingScreen({ onCancel }: { onCancel: () => void }) {
           <motion.div
             className="h-full rounded-full"
             initial={{ width: "8%" }}
-            animate={{ width: "92%" }}
+            animate={{ width: "94%" }}
             transition={{ duration: 5, ease: "easeInOut" }}
             style={{ background: "linear-gradient(90deg, #22d3ee, #38bdf8, #6366f1)" }}
           />
@@ -221,7 +211,7 @@ function GpsSuccessPopup({ cityName }: { cityName: string }) {
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.75, y: 30, opacity: 0 }}
         transition={{ type: "spring", stiffness: 260, damping: 22 }}
-        className="relative max-w-sm w-full flex flex-col items-center text-center gap-5 rounded-3xl p-10"
+        className="relative max-w-sm w-full flex flex-col items-center text-center gap-4 rounded-3xl p-8 sm:p-9"
         style={{
           background: "linear-gradient(160deg, rgba(5,30,20,0.98) 0%, rgba(5,20,15,0.98) 100%)",
           border: "1.5px solid rgba(52,211,153,0.35)",
@@ -229,46 +219,32 @@ function GpsSuccessPopup({ cityName }: { cityName: string }) {
             "0 40px 100px rgba(0,0,0,0.7), 0 0 60px rgba(52,211,153,0.15), inset 0 1px 0 rgba(255,255,255,0.06)",
         }}
       >
-        <motion.div
-          initial={{ scale: 0, rotate: -20 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ type: "spring", stiffness: 300, damping: 18, delay: 0.15 }}
-          className="text-7xl select-none"
-          role="img"
-          aria-label="Smiling face"
-        >
-          😊
-        </motion.div>
+        {/* Celebratory Mascot */}
+        <div className="relative">
+          <WeatherMascot mode="success" size="md" />
+          <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-mono tracking-widest uppercase bg-emerald-950/90 text-emerald-300 border border-emerald-400/50 shadow-[0_0_15px_rgba(52,211,153,0.4)] backdrop-blur-md">
+            COORDINATES LOCKED
+          </span>
+        </div>
 
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.3, type: "spring", stiffness: 280, damping: 20 }}
-        >
-          <CheckCircle2
-            className="w-10 h-10 text-emerald-400"
-            style={{ filter: "drop-shadow(0 0 12px rgba(52,211,153,0.7))" }}
-          />
-        </motion.div>
-
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 pt-1">
           <motion.h2
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
+            transition={{ delay: 0.25 }}
             className="text-2xl font-extrabold text-white tracking-tight"
           >
-            Location found! 🎉
+            Location Confirmed!
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45 }}
+            transition={{ delay: 0.35 }}
             className="text-slate-300 text-sm leading-relaxed"
           >
             You&apos;re in <strong className="text-emerald-300">{cityName}</strong>.
             <br />
-            Now you can continue — taking you to your forecast!
+            Synchronizing live atmospheric forecast…
           </motion.p>
         </div>
 

@@ -246,3 +246,73 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* 3D GPS Orbit & Mascot Animations */
+@keyframes orbit3dX {
+  0% { transform: rotateX(70deg) rotateZ(0deg); }
+  100% { transform: rotateX(70deg) rotateZ(360deg); }
+}
+
+@keyframes orbit3dY {
+  0% { transform: rotateY(70deg) rotateZ(0deg); }
+  100% { transform: rotateY(70deg) rotateZ(-360deg); }
+}
+
+@keyframes orbit3dDiag {
+  0% { transform: rotateX(50deg) rotateY(40deg) rotateZ(0deg); }
+  100% { transform: rotateX(50deg) rotateY(40deg) rotateZ(360deg); }
+}
+
+@keyframes radarSweep {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes floatBob {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(1.5deg); }
+}
+
+@keyframes blinkEyes {
+  0%, 90%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.12); }
+}
+
+@keyframes satelliteBeep {
+  0% { transform: scale(0.8); opacity: 0.9; }
+  60% { transform: scale(1.6); opacity: 0; }
+  100% { transform: scale(0.8); opacity: 0; }
+}
+
+.animate-orbit-3d-x {
+  animation: orbit3dX 8s linear infinite;
+  transform-style: preserve-3d;
+}
+
+.animate-orbit-3d-y {
+  animation: orbit3dY 11s linear infinite;
+  transform-style: preserve-3d;
+}
+
+.animate-orbit-3d-diag {
+  animation: orbit3dDiag 14s linear infinite;
+  transform-style: preserve-3d;
+}
+
+.animate-radar-sweep {
+  animation: radarSweep 3s linear infinite;
+}
+
+.animate-float-bob {
+  animation: floatBob 3.5s ease-in-out infinite;
+}
+
+.animate-blink-eyes {
+  animation: blinkEyes 4.5s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.animate-satellite-beep {
+  animation: satelliteBeep 2s ease-out infinite;
+}
+
